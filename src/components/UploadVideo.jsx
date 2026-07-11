@@ -13,6 +13,8 @@ export default function UploadVideo({ session }) {
   const [mood, setMood] = useState(null)
   const [script, setScript] = useState('')
   const [editingScript, setEditingScript] = useState(false)
+  const [generatingVoice, setGeneratingVoice] = useState(false)
+  const [audioUrl, setAudioUrl] = useState(null)
 
   const handleFileSelect = (e) => {
     const selected = e.target.files[0]
@@ -22,6 +24,7 @@ export default function UploadVideo({ session }) {
       setError('')
       setMood(null)
       setScript('')
+      setAudioUrl(null)
     }
   }
 
@@ -43,6 +46,26 @@ export default function UploadVideo({ session }) {
       setError('Analysis failed: ' + err.message)
     }
     setAnalyzing(false)
+  }
+
+  const generateVoice = async (provider) => {
+    setGeneratingVoice(true)
+    setError('')
+    setAudioUrl(null)
+    try {
+      const res = await fetch('/api/generate-voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ script, provider }),
+      })
+      const result = await res.json()
+      if (result.error) throw new Error(result.error)
+      const audioSrc = `data:${result.mimeType};base64,${result.audio}`
+      setAudioUrl(audioSrc)
+    } catch (err) {
+      setError('Voice generation failed: ' + err.message)
+    }
+    setGeneratingVoice(false)
   }
 
   const handleUpload = async () => {
@@ -179,6 +202,30 @@ export default function UploadVideo({ session }) {
               >
                 {editingScript ? 'Done editing' : 'Write my own'}
               </button>
+            </div>
+
+            <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #2E2A3F' }}>
+              <div style={{ fontSize: '12px', color: '#9691A8', marginBottom: '10px' }}>Generate voiceover:</div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  onClick={() => generateVoice('openai')}
+                  disabled={generatingVoice}
+                  style={{ flex: 1, padding: '10px', background: '#2E2A3F', border: 'none', borderRadius: '8px', color: '#F5F3FA', fontSize: '13px', cursor: 'pointer' }}
+                >
+                  {generatingVoice ? 'Generating...' : 'Free voice'}
+                </button>
+                <button
+                  onClick={() => generateVoice('elevenlabs')}
+                  disabled={generatingVoice}
+                  style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg, #FF5D8F, #FF9F45)', border: 'none', borderRadius: '8px', color: '#14121C', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}
+                >
+                  {generatingVoice ? 'Generating...' : 'Premium voice'}
+                </button>
+              </div>
+
+              {audioUrl && (
+                <audio controls src={audioUrl} style={{ width: '100%', marginTop: '12px' }} />
+              )}
             </div>
           </div>
         )}
