@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import Auth from './components/Auth'
-import ClipBay from './components/ClipBay'
+import UploadVideo from './components/UploadVideo'
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -22,5 +22,5 @@ export default function App() {
 
   if (loading) return null
 
-  return session ? <ClipBay session={session} /> : <Auth />
+  return session ? <UploadVideo session={session} /> : <Auth />
 }
