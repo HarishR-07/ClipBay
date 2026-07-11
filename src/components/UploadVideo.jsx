@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
-import { Upload, Film, LogOut, CheckCircle2, Sparkles } from 'lucide-react'
+import { Upload, Film, LogOut, CheckCircle2, Sparkles, Music } from 'lucide-react'
 import { extractFrames } from '../extractFrames'
 
 export default function UploadVideo({ session }) {
@@ -20,6 +20,12 @@ export default function UploadVideo({ session }) {
   const [editingScript, setEditingScript] = useState(false)
   const [generatingVoice, setGeneratingVoice] = useState(false)
   const [audioUrl, setAudioUrl] = useState(null)
+
+  const [loadingMusic, setLoadingMusic] = useState(false)
+  const [musicTracks, setMusicTracks] = useState([])
+  const [selectedTrack, setSelectedTrack] = useState(null)
+  const [ownMusicFile, setOwnMusicFile] = useState(null)
+  const [showOwnMusicUpload, setShowOwnMusicUpload] = useState(false)
 
   const handleReferenceSelect = (e) => {
     const selected = e.target.files[0]
@@ -61,6 +67,8 @@ export default function UploadVideo({ session }) {
       setMood(null)
       setScript('')
       setAudioUrl(null)
+      setMusicTracks([])
+      setSelectedTrack(null)
     }
   }
 
@@ -78,10 +86,38 @@ export default function UploadVideo({ session }) {
       if (result.error) throw new Error(result.error)
       setMood(result.mood)
       setScript(result.script)
+      suggestMusic(result.mood)
     } catch (err) {
       setError('Analysis failed: ' + err.message)
     }
     setAnalyzing(false)
+  }
+
+  const suggestMusic = async (moodValue) => {
+    setLoadingMusic(true)
+    setMusicTracks([])
+    try {
+      const searchMood = referenceStyle?.musicMood || moodValue
+      const res = await fetch('/api/suggest-music', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mood: searchMood }),
+      })
+      const result = await res.json()
+      if (result.error) throw new Error(result.error)
+      setMusicTracks(result.tracks || [])
+    } catch (err) {
+      setError('Music suggestion failed: ' + err.message)
+    }
+    setLoadingMusic(false)
+  }
+
+  const handleOwnMusicSelect = (e) => {
+    const selected = e.target.files[0]
+    if (selected) {
+      setOwnMusicFile(selected)
+      setSelectedTrack({ name: selected.name, own: true, audioUrl: URL.createObjectURL(selected) })
+    }
   }
 
   const generateVoice = async (provider) => {
@@ -297,6 +333,57 @@ export default function UploadVideo({ session }) {
                     </button>
                   </div>
                   {audioUrl && <audio controls src={audioUrl} style={{ width: '100%', marginTop: '12px' }} />}
+                </div>
+
+                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #2E2A3F' }}>
+                  <div style={{ fontSize: '12px', color: '#9691A8', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Music size={13} /> Background music:
+                  </div>
+
+                  {loadingMusic && <div style={{ fontSize: '13px', color: '#9691A8' }}>Finding matching tracks...</div>}
+
+                  {!loadingMusic && musicTracks.length > 0 && !showOwnMusicUpload && (
+                    <div>
+                      {musicTracks.map((track, i) => (
+                        <div key={i} style={{ padding: '10px', background: '#14121C', border: selectedTrack?.name === track.name ? '1px solid #FF9F45' : '1px solid #2E2A3F', borderRadius: '8px', marginBottom: '8px' }}>
+                          <div style={{ fontSize: '13px', marginBottom: '6px' }}>{track.name} — {track.artist}</div>
+                          <audio controls src={track.audioUrl} style={{ width: '100%', height: '32px' }} />
+                          <button
+                            onClick={() => setSelectedTrack(track)}
+                            style={{ ...btnStyle, marginTop: '6px', padding: '6px', fontSize: '12px', background: selectedTrack?.name === track.name ? '#FF9F45' : '#2E2A3F', color: selectedTrack?.name === track.name ? '#14121C' : '#F5F3FA' }}
+                          >
+                            {selectedTrack?.name === track.name ? 'Selected' : 'Use this track'}
+                          </button>
+                        </div>
+                      ))}
+                      <button onClick={() => setShowOwnMusicUpload(true)} style={{ ...btnStyle, width: '100%', marginTop: '4px' }}>
+                        None of these — upload my own
+                      </button>
+                    </div>
+                  )}
+
+                  {showOwnMusicUpload && (
+                    <div>
+                      <label htmlFor="own-music-upload" style={{ ...boxStyle, padding: '20px' }}>
+                        <div style={{ fontSize: '13px', color: ownMusicFile ? '#F5F3FA' : '#9691A8' }}>
+                          {ownMusicFile ? ownMusicFile.name : 'Tap to choose your own music file'}
+                        </div>
+                        <input
+                          id="own-music-upload"
+                          type="file"
+                          accept="audio/*"
+                          onChange={handleOwnMusicSelect}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                      {selectedTrack?.own && (
+                        <audio controls src={selectedTrack.audioUrl} style={{ width: '100%', marginTop: '10px' }} />
+                      )}
+                      <button onClick={() => setShowOwnMusicUpload(false)} style={{ ...btnStyle, width: '100%', marginTop: '8px' }}>
+                        Back to suggestions
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
