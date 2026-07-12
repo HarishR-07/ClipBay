@@ -2,18 +2,29 @@ import Anthropic from '@anthropic-ai/sdk';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// Rough spoken-word pacing for natural narration (words per second).
+const WORDS_PER_SECOND = 2.3;
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { frames } = req.body;
+    const { frames, targetDuration } = req.body;
 
     const imageBlocks = frames.map((base64) => ({
       type: 'image',
       source: { type: 'base64', media_type: 'image/jpeg', data: base64 },
     }));
+
+    const targetWordCount = targetDuration
+      ? Math.max(5, Math.round(targetDuration * WORDS_PER_SECOND))
+      : null;
+
+    const durationInstruction = targetDuration
+      ? ` The script must take approximately ${targetDuration} seconds to narrate aloud at a natural pace — that's about ${targetWordCount} words. This is a hard constraint: do not write significantly more or fewer words than that.`
+      : ' Write 3-5 sentences.';
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-5',
@@ -25,7 +36,7 @@ export default async function handler(req, res) {
             ...imageBlocks,
             {
               type: 'text',
-              text: `These are frames from a video, in order. Classify the overall mood (pick one: emotional, sad, angry, heartwarming, narrative, upbeat, dramatic) and write a short voiceover script (3-5 sentences) matching that mood. Respond ONLY as JSON: {"mood": "...", "script": "..."}`,
+              text: `These are frames from a video, in order. Classify the overall mood (pick one: emotional, sad, angry, heartwarming, narrative, upbeat, dramatic) and write a short voiceover script matching that mood.${durationInstruction} Respond ONLY as JSON: {"mood": "...", "script": "..."}`,
             },
           ],
         },
