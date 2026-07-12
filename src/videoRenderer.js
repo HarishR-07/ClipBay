@@ -15,8 +15,10 @@ export async function renderVideoWithOverlays(
   overlayCommands,
   audioOptions,
   colorGrading,
-  videoDuration, // total clip duration in seconds (used to clamp caption timing)
-  captions, // NEW: array of { text, startSeconds, endSeconds, position? }
+  videoDuration,
+  captions,
+  captionPosition,
+  captionFontUrl,
   onProgress
 ) {
   const { voiceoverUrl, musicUrl } = audioOptions || {}
