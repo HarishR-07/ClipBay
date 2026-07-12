@@ -1,5 +1,6 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg'
 import { fetchFile, toBlobURL } from '@ffmpeg/util'
+import { getBeatAlignedStart } from './beatMatch'
 
 const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd'
 
@@ -57,7 +58,8 @@ export async function renderVideoWithOverlays(
   let musicIndex = null
   if (musicUrl) {
     await ffmpeg.writeFile('music.mp3', await fetchFile(musicUrl))
-    inputs.push('-stream_loop', '-1', '-i', 'music.mp3')
+    const musicStart = await getBeatAlignedStart(musicUrl)
+    inputs.push('-ss', String(musicStart), '-stream_loop', '-1', '-i', 'music.mp3')
     musicIndex = nextIndex++
   }
 
