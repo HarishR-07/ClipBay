@@ -36,7 +36,7 @@ export default function UploadVideo({ session }) {
     setRenderProgress(0)
     setError('')
     try {
-      const url = await renderVideoWithOverlays(file, parsedCommands, { voiceoverUrl: audioUrl, musicUrl: selectedTrack?.audioUrl }, setRenderProgress)
+      const url = await renderVideoWithOverlays(file, parsedCommands, { voiceoverUrl: audioUrl, musicUrl: selectedTrack?.audioUrl }, referenceStyle?.colorValues, setRenderProgress)
       setRenderedVideoUrl(url)
     } catch (err) {
       setError('Rendering failed: ' + err.message)
