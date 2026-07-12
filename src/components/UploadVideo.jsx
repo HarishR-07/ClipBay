@@ -33,6 +33,26 @@ export default function UploadVideo({ session }) {
   const [renderProgress, setRenderProgress] = useState(0)
   const [renderedVideoUrl, setRenderedVideoUrl] = useState(null)
   const [captions, setCaptions] = useState([])
+  const [captionPosition, setCaptionPosition] = useState('bottom')
+  const [captionFont, setCaptionFont] = useState('auto')
+
+  const fontUrlMap = {
+    poppins: 'https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-Bold.ttf',
+    anton: 'https://raw.githubusercontent.com/google/fonts/main/ofl/anton/Anton-Regular.ttf',
+    caveat: 'https://raw.githubusercontent.com/google/fonts/main/ofl/caveat/Caveat-Bold.ttf',
+    merriweather: 'https://raw.githubusercontent.com/google/fonts/main/ofl/merriweather/Merriweather-Bold.ttf',
+  }
+
+  const guessFontFromStyle = (styleText) => {
+    const t = (styleText || '').toLowerCase()
+    if (t.includes('handwrit')) return 'caveat'
+    if (t.includes('serif') && !t.includes('sans')) return 'merriweather'
+    if (t.includes('bold') || t.includes('impact') || t.includes('heavy')) return 'anton'
+    return 'poppins'
+  }
+
+  const resolvedFontKey = captionFont === 'auto' ? guessFontFromStyle(referenceStyle?.fontStyle) : captionFont
+  const captionFontUrl = fontUrlMap[resolvedFontKey]
   const [savingToHistory, setSavingToHistory] = useState(false)
   const [savedProject, setSavedProject] = useState(null) // { id, videoPath }
   const [historyError, setHistoryError] = useState('')
@@ -82,7 +102,7 @@ export default function UploadVideo({ session }) {
     setError('')
     setSavedProject(null)
     try {
-      const url = await renderVideoWithOverlays(file, parsedCommands, { voiceoverUrl: audioUrl, musicUrl: selectedTrack?.audioUrl }, referenceStyle?.colorValues, videoDuration, captions, setRenderProgress)
+      const url = await renderVideoWithOverlays(file, parsedCommands, { voiceoverUrl: audioUrl, musicUrl: selectedTrack?.audioUrl }, referenceStyle?.colorValues, videoDuration, captions, captionPosition, captionFontUrl, setRenderProgress)
       setRenderedVideoUrl(url)
       saveToHistory(url)
     } catch (err) {
@@ -524,6 +544,46 @@ export default function UploadVideo({ session }) {
                     </button>
                   </div>
                   {audioUrl && <audio controls src={audioUrl} style={{ width: '100%', marginTop: '12px' }} />}
+
+                  {captions.length > 0 && (
+                    <div style={{ marginTop: '12px' }}>
+                      <div style={{ fontSize: '12px', color: '#9691A8', marginBottom: '8px' }}>
+                        Captions ({captions.length} lines, auto-burned in):
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                        <select
+                          value={captionPosition}
+                          onChange={(e) => setCaptionPosition(e.target.value)}
+                          style={{ flex: 1, padding: '8px', background: '#14121C', color: '#F5F3FA', border: '1px solid #2E2A3F', borderRadius: '8px', fontSize: '12px' }}
+                        >
+                          <option value="top">Position: Top</option>
+                          <option value="center">Position: Center</option>
+                          <option value="bottom">Position: Bottom</option>
+                        </select>
+
+                        <select
+                          value={captionFont}
+                          onChange={(e) => setCaptionFont(e.target.value)}
+                          style={{ flex: 1, padding: '8px', background: '#14121C', color: '#F5F3FA', border: '1px solid #2E2A3F', borderRadius: '8px', fontSize: '12px' }}
+                        >
+                          <option value="auto">Font: Auto (match reference)</option>
+                          <option value="poppins">Font: Bold Sans</option>
+                          <option value="anton">Font: Impact</option>
+                          <option value="caveat">Font: Handwritten</option>
+                          <option value="merriweather">Font: Serif</option>
+                        </select>
+                      </div>
+
+                      <div style={{ maxHeight: '120px', overflowY: 'auto', background: '#14121C', border: '1px solid #2E2A3F', borderRadius: '8px', padding: '8px' }}>
+                        {captions.map((cap, i) => (
+                          <div key={i} style={{ fontSize: '11px', color: '#6B6780', marginBottom: '4px' }}>
+                            {cap.startSeconds?.toFixed(1)}s–{cap.endSeconds?.toFixed(1)}s: "{cap.text}"
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #2E2A3F' }}>
