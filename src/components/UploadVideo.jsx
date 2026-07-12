@@ -31,13 +31,58 @@ export default function UploadVideo({ session }) {
   const [renderProgress, setRenderProgress] = useState(0)
   const [renderedVideoUrl, setRenderedVideoUrl] = useState(null)
   const [captions, setCaptions] = useState([])
+  const [savingToHistory, setSavingToHistory] = useState(false)
+  const [savedProject, setSavedProject] = useState(null) // { id, videoPath }
+  const [historyError, setHistoryError] = useState('')
+
+  const saveToHistory = async (videoUrl) => {
+    setSavingToHistory(true)
+    setHistoryError('')
+    try {
+      const blob = await (await fetch(videoUrl)).blob()
+      const videoPath = `${session.user.id}/renders/${Date.now()}.mp4`
+
+      const { error: uploadErr } = await supabase.storage
+        .from('videos')
+        .upload(videoPath, blob, { contentType: 'video/mp4' })
+      if (uploadErr) throw uploadErr
+
+      const { data, error: insertErr } = await supabase
+        .from('projects')
+        .insert({ user_id: session.user.id, video_path: videoPath, mood, script })
+        .select()
+        .single()
+      if (insertErr) throw insertErr
+
+      setSavedProject({ id: data.id, videoPath })
+    } catch (err) {
+      setHistoryError('Could not save to history: ' + err.message)
+    }
+    setSavingToHistory(false)
+  }
+
+  const undoSaveToHistory = async () => {
+    if (!savedProject) return
+    setSavingToHistory(true)
+    try {
+      await supabase.storage.from('videos').remove([savedProject.videoPath])
+      await supabase.from('projects').delete().eq('id', savedProject.id)
+      setSavedProject(null)
+    } catch (err) {
+      setHistoryError('Could not undo: ' + err.message)
+    }
+    setSavingToHistory(false)
+  }
+
   const handleRender = async () => {
     setRendering(true)
     setRenderProgress(0)
     setError('')
+    setSavedProject(null)
     try {
       const url = await renderVideoWithOverlays(file, parsedCommands, { voiceoverUrl: audioUrl, musicUrl: selectedTrack?.audioUrl }, referenceStyle?.colorValues, videoDuration, captions, setRenderProgress)
       setRenderedVideoUrl(url)
+      saveToHistory(url)
     } catch (err) {
       setError('Rendering failed: ' + err.message)
     }
@@ -253,6 +298,8 @@ export default function UploadVideo({ session }) {
     setRenderedVideoUrl(null)
     setRenderProgress(0)
     setCaptions([])
+    setSavedProject(null)
+    setHistoryError('')
     setCommandText('')
     setParsedCommands([])
     setVideoDuration(0)
@@ -591,6 +638,23 @@ export default function UploadVideo({ session }) {
                       >
                         <Download size={16} /> Download video
                       </a>
+
+                      <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: '#9691A8' }}>
+                        {savingToHistory && <span>Saving to history...</span>}
+                        {!savingToHistory && savedProject && (
+                          <>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#C6F135' }}>
+                              <CheckCircle2 size={13} /> Saved to history
+                            </span>
+                            <button onClick={undoSaveToHistory} style={{ background: 'none', border: 'none', color: '#FF9F45', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}>
+                              Undo
+                            </button>
+                          </>
+                        )}
+                        {!savingToHistory && !savedProject && historyError && (
+                          <span style={{ color: '#FF5D8F' }}>{historyError}</span>
+                        )}
+                      </div>
                     </>
                   )}
                 </div>
