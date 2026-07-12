@@ -160,7 +160,7 @@ export default function UploadVideo({ session }) {
       const res = await fetch('/api/generate-voice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ script, provider, voice: provider === 'openai' ? openaiVoice : elevenlabsVoice }),
+        body: JSON.stringify({ command: commandText, videoDuration: targetDuration || videoDuration }),
       })
       const result = await res.json()
       if (result.error) throw new Error(result.error)
