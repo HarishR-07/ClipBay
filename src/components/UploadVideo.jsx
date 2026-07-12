@@ -36,7 +36,7 @@ export default function UploadVideo({ session }) {
     setRenderProgress(0)
     setError('')
     try {
-      const url = await renderVideoWithOverlays(file, parsedCommands, { voiceoverUrl: audioUrl, musicUrl: selectedTrack?.audioUrl }, referenceStyle?.colorValues, videoDuration, null, setRenderProgress)
+      const url = await renderVideoWithOverlays(file, parsedCommands, { voiceoverUrl: audioUrl, musicUrl: selectedTrack?.audioUrl }, referenceStyle?.colorValues, videoDuration, captions, setRenderProgress)
       setRenderedVideoUrl(url)
     } catch (err) {
       setError('Rendering failed: ' + err.message)
@@ -133,7 +133,7 @@ export default function UploadVideo({ session }) {
       const res = await fetch('/api/suggest-music', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mood: searchMood, targetDuration }),
+        body: JSON.stringify({ mood: searchMood, videoDuration }),
       })
       const result = await res.json()
       if (result.error) throw new Error(result.error)
@@ -153,6 +153,7 @@ export default function UploadVideo({ session }) {
   }
 
   const generateVoice = async (provider) => {
+  const generateVoice = async (provider) => {
     setGeneratingVoice(true)
     setError('')
     setAudioUrl(null)
@@ -160,12 +161,17 @@ export default function UploadVideo({ session }) {
       const res = await fetch('/api/generate-voice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command: commandText, videoDuration: targetDuration || videoDuration }),
+        body: JSON.stringify({
+          script,
+          provider,
+          voice: provider === 'openai' ? openaiVoice : elevenlabsVoice,
+        }),
       })
       const result = await res.json()
       if (result.error) throw new Error(result.error)
       const audioSrc = `data:${result.mimeType};base64,${result.audio}`
       setAudioUrl(audioSrc)
+      setCaptions(result.captions || [])
     } catch (err) {
       setError('Voice generation failed: ' + err.message)
     }
