@@ -1,6 +1,7 @@
 export async function extractFrames(file, count = 5) {
   const video = document.createElement('video')
-  video.src = URL.createObjectURL(file)
+  const objectUrl = URL.createObjectURL(file)
+  video.src = objectUrl
   video.muted = true
   await new Promise((res) => (video.onloadedmetadata = res))
 
@@ -18,5 +19,7 @@ export async function extractFrames(file, count = 5) {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
     frames.push(canvas.toDataURL('image/jpeg', 0.7).split(',')[1])
   }
+
+  URL.revokeObjectURL(objectUrl)
   return frames
 }
