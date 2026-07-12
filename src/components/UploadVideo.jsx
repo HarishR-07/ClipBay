@@ -153,7 +153,6 @@ export default function UploadVideo({ session }) {
   }
 
   const generateVoice = async (provider) => {
-  const generateVoice = async (provider) => {
     setGeneratingVoice(true)
     setError('')
     setAudioUrl(null)
