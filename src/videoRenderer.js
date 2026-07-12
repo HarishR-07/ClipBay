@@ -3,7 +3,22 @@ import { fetchFile, toBlobURL } from '@ffmpeg/util'
 
 const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd'
 
-export async function renderVideoWithOverlays(videoFile, overlayCommands, audioOptions, colorGrading, onProgress) {
+// Escapes text for safe use inside an ffmpeg drawtext textfile.
+// (Only needed for characters that break the .txt itself, not for
+// drawtext's own escaping — textfile= avoids that whole headache.)
+function sanitizeCaptionText(text) {
+  return (text || '').replace(/\r/g, '')
+}
+
+export async function renderVideoWithOverlays(
+  videoFile,
+  overlayCommands,
+  audioOptions,
+  colorGrading,
+  videoDuration, // total clip duration in seconds (used to clamp caption timing)
+  captions, // NEW: array of { text, startSeconds, endSeconds, position? }
+  onProgress
+) {
   const { voiceoverUrl, musicUrl } = audioOptions || {}
   const ffmpeg = new FFmpeg()
 
@@ -52,6 +67,13 @@ export async function renderVideoWithOverlays(videoFile, overlayCommands, audioO
     center: '(W-w)/2:(H-h)/2',
   }
 
+  // Caption vertical position presets (used for the drawtext y= expression)
+  const captionPositionMap = {
+    top: '80',
+    center: '(h-text_h)/2',
+    bottom: 'h-220',
+  }
+
   let filterParts = []
   let lastVideoLabel = '0:v'
 
@@ -91,6 +113,34 @@ export async function renderVideoWithOverlays(videoFile, overlayCommands, audioO
     filterParts.push(`[${lastVideoLabel}][${overlayIndices[i]}:v]overlay=${pos}:enable='between(t,${start},${end})'[${outLabel}]`)
     lastVideoLabel = outLabel
   })
+
+  // --- NEW: burn in captions on top of everything else ---
+  if (captions && captions.length > 0) {
+    // Load the font once into ffmpeg's virtual filesystem.
+    // Put your .ttf file in /public/fonts/caption-font.ttf
+    await ffmpeg.writeFile('caption-font.ttf', await fetchFile('/fonts/caption-font.ttf'))
+
+    for (let i = 0; i < captions.length; i++) {
+      const cap = captions[i]
+      const start = cap.startSeconds
+      const end = videoDuration ? Math.min(cap.endSeconds, videoDuration) : cap.endSeconds
+      const yPos = captionPositionMap[cap.position] || captionPositionMap.bottom
+      const outLabel = `cap${i}`
+
+      // Write each caption's text to its own file and reference it via
+      // textfile= instead of text= — this sidesteps drawtext's fragile
+      // escaping rules for commas, colons, apostrophes, etc. in real text.
+      await ffmpeg.writeFile(`cap${i}.txt`, sanitizeCaptionText(cap.text))
+
+      filterParts.push(
+        `[${lastVideoLabel}]drawtext=fontfile=caption-font.ttf:textfile=cap${i}.txt:fontsize=56:fontcolor=white:` +
+        `box=1:boxcolor=black@0.55:boxborderw=14:x=(w-text_w)/2:y=${yPos}:` +
+        `enable='between(t,${start},${end})'[${outLabel}]`
+      )
+      lastVideoLabel = outLabel
+    }
+  }
+  // --- end captions block ---
 
   let audioMapArgs = []
   if (voiceIndex !== null && musicIndex !== null) {
