@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
-import { Upload, Film, LogOut, CheckCircle2, Sparkles, Music, Wand2, Image as ImageIcon } from 'lucide-react'
+import { Upload, Film, LogOut, CheckCircle2, Sparkles, Music, Wand2, Image as ImageIcon, Download } from 'lucide-react'
 import { extractFrames } from '../extractFrames'
 import { renderVideoWithOverlays } from '../videoRenderer'
 export default function UploadVideo({ session }) {
@@ -551,7 +551,16 @@ export default function UploadVideo({ session }) {
                     {rendering ? `Rendering... ${renderProgress}%` : 'Render final video'}
                   </button>
                   {renderedVideoUrl && (
-                    <video controls src={renderedVideoUrl} style={{ width: '100%', marginTop: '12px', borderRadius: '8px' }} />
+                    <>
+                      <video controls src={renderedVideoUrl} style={{ width: '100%', marginTop: '12px', borderRadius: '8px' }} />
+                      <a
+                        href={renderedVideoUrl}
+                        download={`clipbay_${Date.now()}.mp4`}
+                        style={{ ...primaryBtnStyle, width: '100%', marginTop: '10px', padding: '13px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                      >
+                        <Download size={16} /> Download video
+                      </a>
+                    </>
                   )}
                 </div>
               </div>
