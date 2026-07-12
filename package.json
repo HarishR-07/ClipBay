@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.10",
+    "web-audio-beat-detector": "^8.2.37",
     "@ffmpeg/util": "^0.12.1",
     "@anthropic-ai/sdk": "^0.32.0",
     "react": "^18.3.1",
