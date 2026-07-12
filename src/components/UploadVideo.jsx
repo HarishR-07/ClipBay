@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
-import { Upload, Film, LogOut, CheckCircle2, Sparkles, Music, Wand2, Image as ImageIcon, Download } from 'lucide-react'
+import { Upload, Film, LogOut, CheckCircle2, Sparkles, Music, Wand2, Image as ImageIcon, Download, RotateCcw } from 'lucide-react'
 import { extractFrames } from '../extractFrames'
 import { renderVideoWithOverlays } from '../videoRenderer'
 export default function UploadVideo({ session }) {
@@ -235,6 +235,29 @@ export default function UploadVideo({ session }) {
 
     analyzeVideo(file)
   }
+  const resetAll = () => {
+    setReferenceFile(null)
+    setReferenceStyle(null)
+    setReferenceStep(true)
+    setFile(null)
+    setUploadedPath(null)
+    setError('')
+    setMood(null)
+    setScript('')
+    setEditingScript(false)
+    setAudioUrl(null)
+    setMusicTracks([])
+    setSelectedTrack(null)
+    setOwnMusicFile(null)
+    setShowOwnMusicUpload(false)
+    setRenderedVideoUrl(null)
+    setRenderProgress(0)
+    setCaptions([])
+    setCommandText('')
+    setParsedCommands([])
+    setVideoDuration(0)
+  }
+
 
   const boxStyle = {
     display: 'block',
@@ -274,12 +297,20 @@ export default function UploadVideo({ session }) {
             </div>
             <span style={{ fontWeight: 700, fontSize: '15px', letterSpacing: '0.05em' }}>CLIP BAY</span>
           </div>
-          <button
-            onClick={() => supabase.auth.signOut()}
-            style={{ background: 'none', border: 'none', color: '#6B6780', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}
-          >
-            <LogOut size={14} /> Log out
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <button
+              onClick={resetAll}
+              style={{ background: 'none', border: 'none', color: '#6B6780', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}
+            >
+              <RotateCcw size={14} /> Start over
+            </button>
+            <button
+              onClick={() => supabase.auth.signOut()}
+              style={{ background: 'none', border: 'none', color: '#6B6780', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}
+            >
+              <LogOut size={14} /> Log out
+            </button>
+          </div>
         </div>
 
         {referenceStep ? (
