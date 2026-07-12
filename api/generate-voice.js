@@ -90,7 +90,7 @@ export default async function handler(req, res) {
 // Groups individual word timestamps into short caption chunks (~4 words
 // each) for Shorts-style burned-in captions, instead of one word at a time
 // or one giant subtitle per sentence.
-function groupWordsIntoCaptions(words, wordsPerChunk = 4) {
+function groupWordsIntoCaptions(words, wordsPerChunk = 3) {
   const chunks = [];
   for (let i = 0; i < words.length; i += wordsPerChunk) {
     const group = words.slice(i, i + wordsPerChunk);
