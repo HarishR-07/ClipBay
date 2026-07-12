@@ -336,6 +336,10 @@ export default function UploadVideo({ session }) {
     fontWeight: 600,
   }
 
+  if (view === 'history') {
+    return <History session={session} onBack={() => setView('editor')} />
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#14121C', color: '#F5F3FA', fontFamily: 'sans-serif', padding: '24px 20px' }}>
       <div style={{ maxWidth: '480px', margin: '0 auto' }}>
