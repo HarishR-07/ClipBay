@@ -30,7 +30,7 @@ export default function UploadVideo({ session }) {
   const [rendering, setRendering] = useState(false)
   const [renderProgress, setRenderProgress] = useState(0)
   const [renderedVideoUrl, setRenderedVideoUrl] = useState(null)
-
+  const [captions, setCaptions] = useState([])
   const handleRender = async () => {
     setRendering(true)
     setRenderProgress(0)
