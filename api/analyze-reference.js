@@ -25,7 +25,9 @@ export default async function handler(req, res) {
             ...imageBlocks,
             {
               type: 'text',
-              text: `These are frames from a reference video. Describe its EDITING STYLE ONLY (not its specific content) so it can be recreated on different footage. Cover: font style used for any on-screen text (e.g. bold sans-serif, handwritten, serif), color grading mood (e.g. warm/desaturated/high-contrast/pastel), pacing (fast cuts vs slow lingering shots), transition types you notice, and what genre/mood of background music would fit this style. Respond ONLY as JSON: {"fontStyle": "...", "colorGrading": "...", "pacing": "...", "transitions": "...", "musicMood": "..."}`,
+              text: `These are frames from a reference video. Describe its EDITING STYLE ONLY (not its specific content) so it can be recreated on different footage. Cover: font style used for any on-screen text, color grading mood in words, pacing, transition types, and what genre/mood of background music would fit. ALSO provide numeric color grading values that approximate this look when applied via standard video filters: brightness (-0.3 to 0.3, 0 is neutral), contrast (0.7 to 1.5, 1.0 is neutral), saturation (0.3 to 1.8, 1.0 is neutral), and temperatureKelvin (3500 for very warm/orange, 6500 for neutral, 9500 for very cool/blue).
+
+Respond ONLY as JSON: {"fontStyle": "...", "colorGrading": "...", "pacing": "...", "transitions": "...", "musicMood": "...", "colorValues": {"brightness": 0, "contrast": 1.0, "saturation": 1.0, "temperatureKelvin": 6500}}`,
             },
           ],
         },
