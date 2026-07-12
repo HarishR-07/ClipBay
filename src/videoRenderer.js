@@ -117,21 +117,17 @@ export async function renderVideoWithOverlays(
   })
 
   // --- NEW: burn in captions on top of everything else ---
+  // --- burn in captions on top of everything else ---
   if (captions && captions.length > 0) {
-    // Load the font once into ffmpeg's virtual filesystem.
-    // Put your .ttf file in /public/fonts/caption-font.ttf
-    await ffmpeg.writeFile('caption-font.ttf', await fetchFile('/fonts/caption-font.ttf'))
+    await ffmpeg.writeFile('caption-font.ttf', await fetchFile(captionFontUrl || '/fonts/caption-font.ttf'))
+    const yPos = captionPositionMap[captionPosition] || captionPositionMap.bottom
 
     for (let i = 0; i < captions.length; i++) {
       const cap = captions[i]
       const start = cap.startSeconds
       const end = videoDuration ? Math.min(cap.endSeconds, videoDuration) : cap.endSeconds
-      const yPos = captionPositionMap[cap.position] || captionPositionMap.bottom
       const outLabel = `cap${i}`
 
-      // Write each caption's text to its own file and reference it via
-      // textfile= instead of text= — this sidesteps drawtext's fragile
-      // escaping rules for commas, colons, apostrophes, etc. in real text.
       await ffmpeg.writeFile(`cap${i}.txt`, sanitizeCaptionText(cap.text))
 
       filterParts.push(
@@ -142,6 +138,7 @@ export async function renderVideoWithOverlays(
       lastVideoLabel = outLabel
     }
   }
+  // --- end captions block ---
   // --- end captions block ---
 
   let audioMapArgs = []
