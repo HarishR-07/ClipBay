@@ -100,6 +100,10 @@ export async function renderVideoWithOverlays(
       filterStr = `vignette:enable='between(t,${start},${end})'`
     } else if (type.includes('fade')) {
       filterStr = `fade=t=in:st=${start}:d=${cmd.durationSeconds}`
+    } else if (type.includes('zoom')) {
+      filterStr = `zoompan=z='if(between(time,${start},${end}),min(zoom+0.0015,1.3),1)':d=1:s=1080x1920:fps=30`
+    } else if (type.includes('shake')) {
+      filterStr = `crop=iw-20:ih-20:10+10*sin(t*40):10+10*cos(t*35):enable='between(t,${start},${end})'`
     }
 
     if (filterStr) {
