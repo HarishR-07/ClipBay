@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
-import { Upload, Film, LogOut, CheckCircle2, Sparkles, Music, Wand2, Image as ImageIcon, Download, RotateCcw } from 'lucide-react'
+import { Upload, Film, LogOut, CheckCircle2, Sparkles, Music, Wand2, Image as ImageIcon, Download, RotateCcw, Clock } from 'lucide-react'
+import History from './History'
 import { extractFrames } from '../extractFrames'
 import { renderVideoWithOverlays } from '../videoRenderer'
 export default function UploadVideo({ session }) {
+  const [view, setView] = useState('editor') // 'editor' | 'history'
   const [referenceFile, setReferenceFile] = useState(null)
   const [referenceStyle, setReferenceStyle] = useState(null)
   const [analyzingReference, setAnalyzingReference] = useState(false)
@@ -345,6 +347,12 @@ export default function UploadVideo({ session }) {
             <span style={{ fontWeight: 700, fontSize: '15px', letterSpacing: '0.05em' }}>CLIP BAY</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <button
+              onClick={() => setView('history')}
+              style={{ background: 'none', border: 'none', color: '#6B6780', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}
+            >
+              <Clock size={14} /> History
+            </button>
             <button
               onClick={resetAll}
               style={{ background: 'none', border: 'none', color: '#6B6780', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}
