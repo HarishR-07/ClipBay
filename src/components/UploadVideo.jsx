@@ -133,7 +133,7 @@ export default function UploadVideo({ session }) {
       const res = await fetch('/api/suggest-music', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mood: searchMood }),
+        body: JSON.stringify({ mood: searchMood, targetDuration }),
       })
       const result = await res.json()
       if (result.error) throw new Error(result.error)
