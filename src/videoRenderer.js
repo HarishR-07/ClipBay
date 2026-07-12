@@ -3,7 +3,7 @@ import { fetchFile, toBlobURL } from '@ffmpeg/util'
 
 const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd'
 
-export async function renderVideoWithOverlays(videoFile, overlayCommands, audioOptions, onProgress) {
+export async function renderVideoWithOverlays(videoFile, overlayCommands, audioOptions, colorGrading, onProgress) {
   const { voiceoverUrl, musicUrl } = audioOptions || {}
   const ffmpeg = new FFmpeg()
 
@@ -54,6 +54,12 @@ export async function renderVideoWithOverlays(videoFile, overlayCommands, audioO
 
   let filterParts = []
   let lastVideoLabel = '0:v'
+
+  if (colorGrading) {
+    const { brightness = 0, contrast = 1.0, saturation = 1.0, temperatureKelvin = 6500 } = colorGrading
+    filterParts.push(`[0:v]eq=brightness=${brightness}:contrast=${contrast}:saturation=${saturation},colortemperature=temperature=${temperatureKelvin}[graded]`)
+    lastVideoLabel = 'graded'
+  }
   overlaysToRender.forEach((cmd, i) => {
     const pos = positionMap[cmd.position] || positionMap.center
     const start = cmd.timestampSeconds
