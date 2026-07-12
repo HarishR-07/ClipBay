@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
-import { Upload, Film, LogOut, CheckCircle2, Sparkles, Music } from 'lucide-react'
+import { Upload, Film, LogOut, CheckCircle2, Sparkles, Music, Wand2, Image as ImageIcon } from 'lucide-react'
 import { extractFrames } from '../extractFrames'
 
 export default function UploadVideo({ session }) {
@@ -26,6 +26,11 @@ export default function UploadVideo({ session }) {
   const [selectedTrack, setSelectedTrack] = useState(null)
   const [ownMusicFile, setOwnMusicFile] = useState(null)
   const [showOwnMusicUpload, setShowOwnMusicUpload] = useState(false)
+
+  const [commandText, setCommandText] = useState('')
+  const [parsingCommand, setParsingCommand] = useState(false)
+  const [parsedCommands, setParsedCommands] = useState([])
+  const [videoDuration, setVideoDuration] = useState(0)
 
   const handleReferenceSelect = (e) => {
     const selected = e.target.files[0]
@@ -58,7 +63,15 @@ export default function UploadVideo({ session }) {
     setReferenceStep(false)
   }
 
-  const handleFileSelect = (e) => {
+  const getVideoDuration = (selectedFile) => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video')
+      video.src = URL.createObjectURL(selectedFile)
+      video.onloadedmetadata = () => resolve(video.duration)
+    })
+  }
+
+  const handleFileSelect = async (e) => {
     const selected = e.target.files[0]
     if (selected) {
       setFile(selected)
@@ -69,6 +82,9 @@ export default function UploadVideo({ session }) {
       setAudioUrl(null)
       setMusicTracks([])
       setSelectedTrack(null)
+      setParsedCommands([])
+      const duration = await getVideoDuration(selected)
+      setVideoDuration(duration)
     }
   }
 
@@ -138,6 +154,40 @@ export default function UploadVideo({ session }) {
       setError('Voice generation failed: ' + err.message)
     }
     setGeneratingVoice(false)
+  }
+
+  const submitCommand = async () => {
+    if (!commandText.trim()) return
+    setParsingCommand(true)
+    setError('')
+    try {
+      const res = await fetch('/api/parse-command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: commandText, videoDuration }),
+      })
+      const result = await res.json()
+      if (result.error) throw new Error(result.error)
+      setParsedCommands((prev) => [...prev, { ...result, rawText: commandText, overlayImage: null, overlayImageUrl: null }])
+      setCommandText('')
+    } catch (err) {
+      setError('Command parsing failed: ' + err.message)
+    }
+    setParsingCommand(false)
+  }
+
+  const attachImageToCommand = (index, e) => {
+    const selected = e.target.files[0]
+    if (!selected) return
+    setParsedCommands((prev) =>
+      prev.map((cmd, i) =>
+        i === index ? { ...cmd, overlayImage: selected, overlayImageUrl: URL.createObjectURL(selected) } : cmd
+      )
+    )
+  }
+
+  const removeCommand = (index) => {
+    setParsedCommands((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleUpload = async () => {
@@ -385,6 +435,65 @@ export default function UploadVideo({ session }) {
                     </div>
                   )}
                 </div>
+
+                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #2E2A3F' }}>
+                  <div style={{ fontSize: '12px', color: '#9691A8', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Wand2 size={13} /> Add overlays & effects (type a command):
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="text"
+                      value={commandText}
+                      onChange={(e) => setCommandText(e.target.value)}
+                      placeholder='e.g. "add sparkle overlay at 5 seconds, top right"'
+                      style={{ flex: 1, padding: '10px', background: '#14121C', color: '#F5F3FA', border: '1px solid #2E2A3F', borderRadius: '8px', fontSize: '13px' }}
+                    />
+                    <button onClick={submitCommand} disabled={parsingCommand || !commandText.trim()} style={{ ...primaryBtnStyle, flex: '0 0 auto', padding: '10px 14px' }}>
+                      {parsingCommand ? '...' : 'Add'}
+                    </button>
+                  </div>
+
+                  {parsedCommands.length > 0 && (
+                    <div style={{ marginTop: '12px' }}>
+                      {parsedCommands.map((cmd, i) => (
+                        <div key={i} style={{ padding: '10px', background: '#14121C', border: '1px solid #2E2A3F', borderRadius: '8px', marginBottom: '8px' }}>
+                          <div style={{ fontSize: '12px', color: '#9691A8', marginBottom: '4px' }}>"{cmd.rawText}"</div>
+                          <div style={{ fontSize: '12px', color: '#F5F3FA', marginBottom: '8px' }}>
+                            {cmd.action === 'add_overlay' && `Overlay at ${cmd.timestampSeconds}s, ${cmd.position}, for ${cmd.durationSeconds}s`}
+                            {cmd.action === 'add_effect' && `Effect "${cmd.effectType}" at ${cmd.timestampSeconds}s`}
+                            {cmd.action === 'unknown' && 'Could not understand this command'}
+                          </div>
+
+                          {cmd.action === 'add_overlay' && (
+                            <div style={{ marginBottom: '8px' }}>
+                              <label
+                                htmlFor={`overlay-image-${i}`}
+                                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px', background: '#1E1B2A', border: '1px dashed #2E2A3F', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', color: cmd.overlayImage ? '#F5F3FA' : '#9691A8' }}
+                              >
+                                <ImageIcon size={14} />
+                                {cmd.overlayImage ? cmd.overlayImage.name : 'Attach overlay image'}
+                              </label>
+                              <input
+                                id={`overlay-image-${i}`}
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => attachImageToCommand(i, e)}
+                                style={{ display: 'none' }}
+                              />
+                              {cmd.overlayImageUrl && (
+                                <img src={cmd.overlayImageUrl} alt="overlay preview" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '6px', marginTop: '6px' }} />
+                              )}
+                            </div>
+                          )}
+
+                          <button onClick={() => removeCommand(i)} style={{ ...btnStyle, padding: '4px', fontSize: '11px' }}>
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -395,3 +504,14 @@ export default function UploadVideo({ session }) {
     </div>
   )
 }
+
+
+
+
+
+
+
+
+
+
+                              
