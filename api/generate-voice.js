@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { script, provider } = req.body;
+  const { script, provider, voice } = req.body;
 
   try {
     if (provider === 'openai') {
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({
           model: 'tts-1',
-          voice: 'alloy',
+          voice: voice || 'alloy',
           input: script,
         }),
       });
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     }
 
     if (provider === 'elevenlabs') {
-      const voiceId = '21m00Tcm4TlvDq8ikWAM';
+      const voiceId = voice || '21m00Tcm4TlvDq8ikWAM';
       const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
         method: 'POST',
         headers: {
