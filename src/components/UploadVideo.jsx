@@ -20,7 +20,8 @@ export default function UploadVideo({ session }) {
   const [editingScript, setEditingScript] = useState(false)
   const [generatingVoice, setGeneratingVoice] = useState(false)
   const [audioUrl, setAudioUrl] = useState(null)
-
+  const [openaiVoice, setOpenaiVoice] = useState('alloy')
+  const [elevenlabsVoice, setElevenlabsVoice] = useState('21m00Tcm4TlvDq8ikWAM')
   const [loadingMusic, setLoadingMusic] = useState(false)
   const [musicTracks, setMusicTracks] = useState([])
   const [selectedTrack, setSelectedTrack] = useState(null)
@@ -159,7 +160,7 @@ export default function UploadVideo({ session }) {
       const res = await fetch('/api/generate-voice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ script, provider }),
+        body: JSON.stringify({ script, provider, voice: provider === 'openai' ? openaiVoice : elevenlabsVoice }),
       })
       const result = await res.json()
       if (result.error) throw new Error(result.error)
@@ -389,12 +390,42 @@ export default function UploadVideo({ session }) {
 
                 <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #2E2A3F' }}>
                   <div style={{ fontSize: '12px', color: '#9691A8', marginBottom: '10px' }}>Generate voiceover:</div>
+
+                  <div style={{ marginBottom: '10px' }}>
+                    <div style={{ fontSize: '11px', color: '#6B6780', marginBottom: '4px' }}>Free voice:</div>
+                    <select
+                      value={openaiVoice}
+                      onChange={(e) => setOpenaiVoice(e.target.value)}
+                      style={{ width: '100%', padding: '8px', background: '#14121C', color: '#F5F3FA', border: '1px solid #2E2A3F', borderRadius: '8px', fontSize: '13px' }}
+                    >
+                      <option value="alloy">Alloy — neutral, balanced</option>
+                      <option value="echo">Echo — warm, approachable</option>
+                      <option value="fable">Fable — animated, energetic</option>
+                      <option value="onyx">Onyx — deep, authoritative</option>
+                      <option value="nova">Nova — bright, upbeat</option>
+                      <option value="shimmer">Shimmer — calm, steady</option>
+                    </select>
+                  </div>
+
+                  <div style={{ marginBottom: '10px' }}>
+                    <div style={{ fontSize: '11px', color: '#6B6780', marginBottom: '4px' }}>Premium voice:</div>
+                    <select
+                      value={elevenlabsVoice}
+                      onChange={(e) => setElevenlabsVoice(e.target.value)}
+                      style={{ width: '100%', padding: '8px', background: '#14121C', color: '#F5F3FA', border: '1px solid #2E2A3F', borderRadius: '8px', fontSize: '13px' }}
+                    >
+                      <option value="21m00Tcm4TlvDq8ikWAM">Rachel — calm, narrative</option>
+                      <option value="pNInz6obpgDQGcFmaJgB">Adam — deep, confident</option>
+                      <option value="EXAVITQu4vr4xnSDxMaL">Bella — soft, friendly</option>
+                    </select>
+                  </div>
+
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <button onClick={() => generateVoice('openai')} disabled={generatingVoice} style={btnStyle}>
-                      {generatingVoice ? 'Generating...' : 'Free voice'}
+                      {generatingVoice ? 'Generating...' : 'Generate (Free)'}
                     </button>
                     <button onClick={() => generateVoice('elevenlabs')} disabled={generatingVoice} style={primaryBtnStyle}>
-                      {generatingVoice ? 'Generating...' : 'Premium voice'}
+                      {generatingVoice ? 'Generating...' : 'Generate (Premium)'}
                     </button>
                   </div>
                   {audioUrl && <audio controls src={audioUrl} style={{ width: '100%', marginTop: '12px' }} />}
