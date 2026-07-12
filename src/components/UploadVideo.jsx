@@ -17,9 +17,29 @@ export default function UploadVideo({ session }) {
   const [uploadedPath, setUploadedPath] = useState(null)
   const [error, setError] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
-  const [mood, setMood] = useState(null)
+ const [mood, setMood] = useState(null)
   const [script, setScript] = useState('')
   const [editingScript, setEditingScript] = useState(false)
+  const [refiningScript, setRefiningScript] = useState(false)
+
+  const refineScript = async (instruction) => {
+    setRefiningScript(true)
+    setError('')
+    try {
+      const res = await fetch('/api/refine-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ script, instruction, mood }),
+      })
+      const result = await res.json()
+      if (result.error) throw new Error(result.error)
+      setScript(result.script)
+    } catch (err) {
+      setError('Script refinement failed: ' + err.message)
+    }
+    setRefiningScript(false)
+  }
+
   const [generatingVoice, setGeneratingVoice] = useState(false)
   const [audioUrl, setAudioUrl] = useState(null)
   const [openaiVoice, setOpenaiVoice] = useState('alloy')
@@ -498,6 +518,9 @@ export default function UploadVideo({ session }) {
                 )}
                 <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
                   <button onClick={() => analyzeVideo(file)} style={btnStyle}>Regenerate</button>
+                  <button onClick={() => refineScript('make it noticeably shorter')} disabled={refiningScript} style={btnStyle}>Shorter</button>
+                  <button onClick={() => refineScript('make it punchier and more energetic')} disabled={refiningScript} style={btnStyle}>Punchier</button>
+                  <button onClick={() => refineScript('make it noticeably longer, add more detail')} disabled={refiningScript} style={btnStyle}>Longer</button>
                   <button onClick={() => setEditingScript(!editingScript)} style={btnStyle}>
                     {editingScript ? 'Done editing' : 'Write my own'}
                   </button>
