@@ -60,6 +60,29 @@ export async function renderVideoWithOverlays(videoFile, overlayCommands, audioO
     filterParts.push(`[0:v]eq=brightness=${brightness}:contrast=${contrast}:saturation=${saturation},colortemperature=temperature=${temperatureKelvin}[graded]`)
     lastVideoLabel = 'graded'
   }
+  const effectsToApply = overlayCommands.filter((c) => c.action === 'add_effect')
+  effectsToApply.forEach((cmd, i) => {
+    const start = cmd.timestampSeconds
+    const end = start + cmd.durationSeconds
+    const type = (cmd.effectType || '').toLowerCase()
+    const outLabel = `fx${i}`
+    let filterStr = null
+
+    if (type.includes('black') || type.includes('grey') || type.includes('gray') || type.includes('b&w') || type.includes('white')) {
+      filterStr = `hue=s=0:enable='between(t,${start},${end})'`
+    } else if (type.includes('blur')) {
+      filterStr = `boxblur=5:1:enable='between(t,${start},${end})'`
+    } else if (type.includes('vignette')) {
+      filterStr = `vignette:enable='between(t,${start},${end})'`
+    } else if (type.includes('fade')) {
+      filterStr = `fade=t=in:st=${start}:d=${cmd.durationSeconds}`
+    }
+
+    if (filterStr) {
+      filterParts.push(`[${lastVideoLabel}]${filterStr}[${outLabel}]`)
+      lastVideoLabel = outLabel
+    }
+  })
   overlaysToRender.forEach((cmd, i) => {
     const pos = positionMap[cmd.position] || positionMap.center
     const start = cmd.timestampSeconds
@@ -89,7 +112,7 @@ export async function renderVideoWithOverlays(videoFile, overlayCommands, audioO
     args.push('-filter_complex', filterParts.join(';'))
   }
 
-  const videoWasFiltered = overlaysToRender.length > 0
+  const videoWasFiltered = filterParts.length > 0
   args.push('-map', videoWasFiltered ? `[${lastVideoLabel}]` : '0:v')
   args.push(...audioMapArgs)
   args.push('-c:v', 'libx264', '-c:a', 'aac', '-shortest', 'output.mp4')
