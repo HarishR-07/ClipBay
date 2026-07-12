@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { Upload, Film, LogOut, CheckCircle2, Sparkles, Music, Wand2, Image as ImageIcon } from 'lucide-react'
 import { extractFrames } from '../extractFrames'
-
+import { renderVideoWithOverlays } from '../videoRenderer'
 export default function UploadVideo({ session }) {
   const [referenceFile, setReferenceFile] = useState(null)
   const [referenceStyle, setReferenceStyle] = useState(null)
@@ -26,7 +26,22 @@ export default function UploadVideo({ session }) {
   const [selectedTrack, setSelectedTrack] = useState(null)
   const [ownMusicFile, setOwnMusicFile] = useState(null)
   const [showOwnMusicUpload, setShowOwnMusicUpload] = useState(false)
+  const [rendering, setRendering] = useState(false)
+  const [renderProgress, setRenderProgress] = useState(0)
+  const [renderedVideoUrl, setRenderedVideoUrl] = useState(null)
 
+  const handleRender = async () => {
+    setRendering(true)
+    setRenderProgress(0)
+    setError('')
+    try {
+      const url = await renderVideoWithOverlays(file, parsedCommands, setRenderProgress)
+      setRenderedVideoUrl(url)
+    } catch (err) {
+      setError('Rendering failed: ' + err.message)
+    }
+    setRendering(false)
+  }
   const [commandText, setCommandText] = useState('')
   const [parsingCommand, setParsingCommand] = useState(false)
   const [parsedCommands, setParsedCommands] = useState([])
@@ -492,6 +507,15 @@ export default function UploadVideo({ session }) {
                         </div>
                       ))}
                     </div>
+                  )}
+                </div>
+
+                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #2E2A3F' }}>
+                  <button onClick={handleRender} disabled={rendering} style={{ ...primaryBtnStyle, width: '100%', padding: '13px' }}>
+                    {rendering ? `Rendering... ${renderProgress}%` : 'Render final video'}
+                  </button>
+                  {renderedVideoUrl && (
+                    <video controls src={renderedVideoUrl} style={{ width: '100%', marginTop: '12px', borderRadius: '8px' }} />
                   )}
                 </div>
               </div>
