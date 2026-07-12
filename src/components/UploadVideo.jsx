@@ -109,7 +109,7 @@ export default function UploadVideo({ session }) {
       const res = await fetch('/api/analyze-reference', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ frames }),
+        body: JSON.stringify({ frames, targetDuration: videoDuration }),
       })
       const result = await res.json()
       if (result.error) throw new Error(result.error)
