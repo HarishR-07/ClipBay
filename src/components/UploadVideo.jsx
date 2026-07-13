@@ -231,12 +231,18 @@ export default function UploadVideo({ session }) {
     setLoadingMusic(false)
   }
 
-  const handleOwnMusicSelect = (e) => {
+  const handleOwnMusicSelect = async (e) => {
     const selected = e.target.files[0]
-    if (selected) {
-      setOwnMusicFile(selected)
-      setSelectedTrack({ name: selected.name, own: true, audioUrl: URL.createObjectURL(selected) })
-    }
+    if (!selected) return
+    setOwnMusicFile(selected)
+
+    const path = `${session.user.id}/${Date.now()}_${selected.name}`
+    const { error: uploadError } = await supabase.storage.from('assets').upload(path, selected)
+    const audioUrl = uploadError
+      ? URL.createObjectURL(selected)
+      : supabase.storage.from('assets').getPublicUrl(path).data.publicUrl
+
+    setSelectedTrack({ name: selected.name, own: true, audioUrl })
   }
 
   const generateVoice = async (provider) => {
@@ -285,9 +291,16 @@ export default function UploadVideo({ session }) {
   }
 
   const attachImageToCommand = async (index, e) => {
+  const attachImageToCommand = async (index, e) => {
     const selected = e.target.files[0]
     if (!selected) return
-    const overlayImageUrl = URL.createObjectURL(selected)
+
+    const path = `${session.user.id}/${Date.now()}_${selected.name}`
+    const { error: uploadError } = await supabase.storage.from('assets').upload(path, selected)
+    const overlayImageUrl = uploadError
+      ? URL.createObjectURL(selected)
+      : supabase.storage.from('assets').getPublicUrl(path).data.publicUrl
+
     let previewFrameUrl = null
     try {
       previewFrameUrl = await getFrameAt(file, parsedCommands[index].timestampSeconds)
