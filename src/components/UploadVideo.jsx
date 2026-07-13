@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
 import { Upload, Film, LogOut, CheckCircle2, Sparkles, Music, Wand2, Image as ImageIcon, Download, RotateCcw, Clock } from 'lucide-react'
 import History from './History'
@@ -125,6 +125,7 @@ export default function UploadVideo({ session }) {
       const url = await renderVideoWithOverlays(file, parsedCommands, { voiceoverUrl: audioUrl, musicUrl: selectedTrack?.audioUrl }, referenceStyle?.colorValues, videoDuration, captions, captionPosition, captionFontUrl, setRenderProgress)
       setRenderedVideoUrl(url)
       saveToHistory(url)
+      await supabase.from('drafts').delete().eq('user_id', session.user.id)
     } catch (err) {
       setError('Rendering failed: ' + err.message)
     }
@@ -134,7 +135,76 @@ export default function UploadVideo({ session }) {
   const [parsingCommand, setParsingCommand] = useState(false)
   const [parsedCommands, setParsedCommands] = useState([])
   const [videoDuration, setVideoDuration] = useState(0)
+  const [resumeDraft, setResumeDraft] = useState(null)
 
+  useEffect(() => {
+    supabase.from('drafts').select('data').eq('user_id', session.user.id).maybeSingle()
+      .then(({ data }) => {
+        if (data?.data) setResumeDraft(data.data)
+      })
+  }, [])
+
+  useEffect(() => {
+    if (!uploadedPath) return
+    const timeout = setTimeout(() => {
+      supabase.from('drafts').upsert({
+        user_id: session.user.id,
+        data: {
+          uploadedPath,
+          mood,
+          script,
+          selectedTrack: selectedTrack?.own ? null : selectedTrack,
+          parsedCommands: parsedCommands.map((c) => ({ ...c, overlayImage: null, previewFrameUrl: null })),
+          captionPosition,
+          captionFont,
+        },
+        updated_at: new Date().toISOString(),
+      }).then(() => {})
+    }, 1500)
+    return () => clearTimeout(timeout)
+  }, [uploadedPath, mood, script, selectedTrack, parsedCommands, captionPosition, captionFont])
+
+  const applyResumeDraft = async () => {
+    if (!resumeDraft) return
+    setMood(resumeDraft.mood || null)
+    setScript(resumeDraft.script || '')
+    setSelectedTrack(resumeDraft.selectedTrack || null)
+    setCaptionPosition(resumeDraft.captionPosition || 'bottom')
+    setCaptionFont(resumeDraft.captionFont || 'auto')
+    const restoredCommands = resumeDraft.parsedCommands || []
+    if (resumeDraft.uploadedPath) {
+      const { data, error } = await supabase.storage.from('videos').download(resumeDraft.uploadedPath)
+      if (!error && data) {
+        const restoredFile = new File([data], 'resumed-video.mp4', { type: data.type })
+        setFile(restoredFile)
+        setUploadedPath(resumeDraft.uploadedPath)
+        const duration = await getVideoDuration(restoredFile)
+        setVideoDuration(duration)
+        const commandsWithPreviews = await Promise.all(
+          restoredCommands.map(async (cmd) => {
+            if (cmd.overlayImageUrl) {
+              try {
+                const previewFrameUrl = await getFrameAt(restoredFile, cmd.timestampSeconds)
+                return { ...cmd, previewFrameUrl }
+              } catch {
+                return cmd
+              }
+            }
+            return cmd
+          })
+        )
+        setParsedCommands(commandsWithPreviews)
+      }
+    }
+    if (!resumeDraft.uploadedPath) setParsedCommands(restoredCommands)
+    setReferenceStep(false)
+    setResumeDraft(null)
+  }
+
+  const discardDraft = async () => {
+    await supabase.from('drafts').delete().eq('user_id', session.user.id)
+    setResumeDraft(null)
+  }
   const handleReferenceSelect = (e) => {
     const selected = e.target.files[0]
     if (selected) setReferenceFile(selected)
@@ -291,7 +361,6 @@ export default function UploadVideo({ session }) {
   }
 
   const attachImageToCommand = async (index, e) => {
-  const attachImageToCommand = async (index, e) => {
     const selected = e.target.files[0]
     if (!selected) return
 
@@ -429,6 +498,15 @@ export default function UploadVideo({ session }) {
   return (
     <div style={{ minHeight: '100vh', background: '#14121C', color: '#F5F3FA', fontFamily: 'sans-serif', padding: '24px 20px' }}>
       <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+        {resumeDraft && (
+          <div style={{ marginBottom: '16px', padding: '14px', background: '#1E1B2A', border: '2px solid #FF9F45', borderRadius: '10px' }}>
+            <div style={{ fontSize: '13px', marginBottom: '10px' }}>You have an unfinished project. Resume it?</div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={applyResumeDraft} style={{ flex: 1, padding: '8px', background: 'linear-gradient(135deg, #FF5D8F, #FF9F45)', border: 'none', borderRadius: '8px', color: '#14121C', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>Resume</button>
+              <button onClick={discardDraft} style={{ flex: 1, padding: '8px', background: '#2E2A3F', border: 'none', borderRadius: '8px', color: '#F5F3FA', fontSize: '12px', cursor: 'pointer' }}>Discard</button>
+            </div>
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'linear-gradient(135deg, #FF5D8F, #FF9F45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
