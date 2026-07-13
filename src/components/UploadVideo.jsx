@@ -239,7 +239,7 @@ export default function UploadVideo({ session }) {
       setReferenceStyle(result)
       setReferenceStep(false)
     } catch (err) {
-      setError('Reference analysis failed: ' + err.message)
+      setError('Reference analysis failed: ' + friendlyError(err.message))
     }
     setAnalyzingReference(false)
   }
