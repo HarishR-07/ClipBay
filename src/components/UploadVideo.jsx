@@ -257,6 +257,8 @@ export default function UploadVideo({ session }) {
     })
   }
 
+  const [lengthWarning, setLengthWarning] = useState('')
+
   const handleFileSelect = async (e) => {
     const selected = e.target.files[0]
     if (selected) {
@@ -269,8 +271,12 @@ export default function UploadVideo({ session }) {
       setMusicTracks([])
       setSelectedTrack(null)
       setParsedCommands([])
+      setLengthWarning('')
       const duration = await getVideoDuration(selected)
       setVideoDuration(duration)
+      if (duration > 90) {
+        setLengthWarning(`This video is ${Math.round(duration)}s long. Rendering (especially with overlays, effects, or captions) happens in your browser and can take several minutes, or run out of memory, on longer clips like this. Under 60s is smoothest.`)
+      }
     }
   }
 
@@ -650,6 +656,12 @@ export default function UploadVideo({ session }) {
                 style={{ display: 'none' }}
               />
             </label>
+
+            {lengthWarning && !uploadedPath && (
+              <div style={{ marginTop: '12px', padding: '12px', background: '#1E1B2A', border: '1px solid #FF9F45', borderRadius: '8px', fontSize: '12px', color: '#FF9F45' }}>
+                {lengthWarning}
+              </div>
+            )}
 
             {file && !uploadedPath && (
               <button onClick={handleUpload} disabled={uploading} style={{ ...primaryBtnStyle, width: '100%', marginTop: '16px', padding: '13px' }}>
