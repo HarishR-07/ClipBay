@@ -14,6 +14,13 @@ export default async function handler(req, res) {
   try {
     const { command, videoDuration } = req.body;
 
+    if (!command || typeof command !== 'string') {
+      return res.status(400).json({ error: 'Command is required' });
+    }
+    if (command.length > 300) {
+      return res.status(400).json({ error: 'Command is too long (max 300 characters)' });
+    }
+
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-5',
       max_tokens: 300,
