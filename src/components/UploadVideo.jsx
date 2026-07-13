@@ -6,6 +6,11 @@ import { extractFrames, getFrameAt } from '../extractFrames'
 import { renderVideoWithOverlays } from '../videoRenderer'
 import { getBeatAlignedStart } from '../beatMatch'
 export default function UploadVideo({ session }) {
+  function friendlyError(message) {
+    if (!message) return 'Something went wrong. Please try again.'
+    if (message.includes('Failed to fetch')) return 'Network error — check your connection and try again.'
+    return message
+  }
   const [view, setView] = useState('editor') // 'editor' | 'history'
   const [referenceFile, setReferenceFile] = useState(null)
   const [referenceStyle, setReferenceStyle] = useState(null)
@@ -868,22 +873,7 @@ export default function UploadVideo({ session }) {
                             {cmd.action === 'unknown' && 'Could not understand this command'}
                           </div>
 
-                          {cmd.action === 'add_overlay' && (
-                            <div style={{ marginBottom: '8px' }}>
-                              <label
-                                htmlFor={`overlay-image-${i}`}
-                                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px', background: '#1E1B2A', border: '1px dashed #2E2A3F', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', color: cmd.overlayImage ? '#F5F3FA' : '#9691A8' }}
-                              >
-                                <ImageIcon size={14} />
-                                {cmd.overlayImage ? cmd.overlayImage.name : 'Attach overlay image'}
-                              </label>
-                              <input
-                                id={`overlay-image-${i}`}
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => attachImageToCommand(i, e)}
-                                style={{ display: 'none' }}
-                              />
+                          
                               {cmd.action === 'add_overlay' && (
                             <div style={{ marginBottom: '8px' }}>
                               <label
