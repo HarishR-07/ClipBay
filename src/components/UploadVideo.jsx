@@ -739,7 +739,10 @@ export default function UploadVideo({ session }) {
                               />
                               {cmd.action === 'add_overlay' && (
                             <div style={{ marginBottom: '8px' }}>
-                              <label htmlFor={`overlay-image-${i}`} style={{ ... }}>
+                              <label
+  htmlFor={`overlay-image-${i}`}
+  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px', background: '#1E1B2A', border: '1px dashed #2E2A3F', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', color: cmd.overlayImage ? '#F5F3FA' : '#9691A8' }}
+>
                                 <ImageIcon size={14} />
                                 {cmd.overlayImage ? cmd.overlayImage.name : 'Attach overlay image'}
                               </label>
