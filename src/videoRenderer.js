@@ -94,17 +94,17 @@ export async function renderVideoWithOverlays(
     const outLabel = `fx${i}`
     let filterStr = null
 
-    if (type.includes('black') || type.includes('grey') || type.includes('gray') || type.includes('b&w') || type.includes('white')) {
+    if (type === 'black_and_white') {
       filterStr = `hue=s=0:enable='between(t,${start},${end})'`
-    } else if (type.includes('blur')) {
+    } else if (type === 'blur') {
       filterStr = `boxblur=5:1:enable='between(t,${start},${end})'`
-    } else if (type.includes('vignette')) {
+    } else if (type === 'vignette') {
       filterStr = `vignette:enable='between(t,${start},${end})'`
-    } else if (type.includes('fade')) {
+    } else if (type === 'fade') {
       filterStr = `fade=t=in:st=${start}:d=${cmd.durationSeconds}`
-    } else if (type.includes('zoom')) {
+    } else if (type === 'zoom') {
       filterStr = `zoompan=z='if(between(time,${start},${end}),min(zoom+0.0015,1.3),1)':d=1:s=1080x1920:fps=30`
-    } else if (type.includes('shake')) {
+    } else if (type === 'shake') {
       filterStr = `crop=iw-20:ih-20:10+10*sin(t*40):10+10*cos(t*35):enable='between(t,${start},${end})'`
     }
 
