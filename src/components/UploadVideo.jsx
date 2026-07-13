@@ -565,29 +565,37 @@ export default function UploadVideo({ session }) {
   }
 
   const handleUpload = async () => {
-    if (!file) return
-    setUploading(true)
-    setError('')
-    setProgress('Uploading...')
+  if (!file) return;
 
-    const filePath = `${session.user.id}/${Date.now()}_${file.name}`
+  setUploading(true);
+  setError("");
+  setProgress("Uploading...");
 
-    const { data, error: uploadError } = await supabase.storage
-      .from('videos')
-      .upload(filePath, file)
+  try {
+    const filePath = `${session.user.id}/${Date.now()}_${file.name}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("videos")
+      .upload(filePath, file);
 
     if (uploadError) {
-      setError(uploadError.message)
-      setUploading(false)
-      return
+      throw uploadError;
     }
 
-    setUploadedPath(filePath)
-    setProgress('Uploaded successfully')
-    setUploading(false)
+    setUploadedPath(filePath);
 
-    analyzeVideo(file)
+    setProgress("Analyzing video...");
+
+    await analyzeVideo(file);
+
+    setProgress("Completed!");
+  } catch (err) {
+    console.error(err);
+    setError(err.message || "Something went wrong. Please try again.");
+  } finally {
+    setUploading(false);
   }
+};
   const resetAll = () => {
     setReferenceFile(null)
     setReferenceStyle(null)
