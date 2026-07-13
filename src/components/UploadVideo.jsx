@@ -425,6 +425,37 @@ export default function UploadVideo({ session }) {
   const removeCommand = (index) => {
     setParsedCommands((prev) => prev.filter((_, i) => i !== index))
   }
+  const [editingCommandIndex, setEditingCommandIndex] = useState(null)
+  const [editCommandText, setEditCommandText] = useState('')
+
+  const startEditCommand = (index) => {
+    setEditingCommandIndex(index)
+    setEditCommandText(parsedCommands[index].rawText)
+  }
+
+  const saveEditCommand = async (index) => {
+    if (!editCommandText.trim()) return
+    setParsingCommand(true)
+    setError('')
+    try {
+      const res = await fetch('/api/parse-command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: editCommandText, videoDuration }),
+      })
+      const result = await res.json()
+      if (result.error) throw new Error(result.error)
+      setParsedCommands((prev) =>
+        prev.map((cmd, i) =>
+          i === index ? { ...cmd, ...result, rawText: editCommandText } : cmd
+        )
+      )
+      setEditingCommandIndex(null)
+    } catch (err) {
+      setError('Command update failed: ' + err.message)
+    }
+    setParsingCommand(false)
+  }
 
   const handleUpload = async () => {
     if (!file) return
@@ -899,9 +930,23 @@ export default function UploadVideo({ session }) {
                             </div>
                           )}
 
-                          <button onClick={() => removeCommand(i)} style={{ ...btnStyle, padding: '4px', fontSize: '11px' }}>
-                            Remove
-                          </button>
+                          {editingCommandIndex === i ? (
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <input
+                                type="text"
+                                value={editCommandText}
+                                onChange={(e) => setEditCommandText(e.target.value)}
+                                style={{ flex: 1, padding: '6px', background: '#1E1B2A', color: '#F5F3FA', border: '1px solid #2E2A3F', borderRadius: '6px', fontSize: '12px' }}
+                              />
+                              <button onClick={() => saveEditCommand(i)} disabled={parsingCommand} style={{ ...btnStyle, padding: '4px 8px', fontSize: '11px' }}>Save</button>
+                              <button onClick={() => setEditingCommandIndex(null)} style={{ ...btnStyle, padding: '4px 8px', fontSize: '11px' }}>Cancel</button>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <button onClick={() => startEditCommand(i)} style={{ ...btnStyle, padding: '4px', fontSize: '11px' }}>Edit</button>
+                              <button onClick={() => removeCommand(i)} style={{ ...btnStyle, padding: '4px', fontSize: '11px' }}>Remove</button>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
