@@ -34,7 +34,7 @@ export default function UploadVideo({ session }) {
     try {
       const res = await fetch('/api/refine-script', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ script, instruction, mood }),
       })
       const result = await res.json()
@@ -236,7 +236,7 @@ export default function UploadVideo({ session }) {
       const frames = await extractFrames(referenceFile)
       const res = await fetch('/api/analyze-reference', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ frames, targetDuration: videoDuration }),
       })
       const result = await res.json()
@@ -292,7 +292,7 @@ export default function UploadVideo({ session }) {
       const frames = await extractFrames(selectedFile)
       const res = await fetch('/api/analyze-video', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ frames }),
       })
       const result = await res.json()
@@ -313,7 +313,7 @@ export default function UploadVideo({ session }) {
       const searchMood = referenceStyle?.musicMood || moodValue
       const res = await fetch('/api/suggest-music', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ mood: searchMood, videoDuration }),
       })
       const result = await res.json()
@@ -346,7 +346,7 @@ export default function UploadVideo({ session }) {
     try {
       const res = await fetch('/api/generate-voice', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({
           script,
           provider,
@@ -371,7 +371,7 @@ export default function UploadVideo({ session }) {
     try {
       const res = await fetch('/api/parse-command', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ command: commandText, videoDuration }),
       })
       const result = await res.json()
@@ -451,7 +451,7 @@ export default function UploadVideo({ session }) {
     try {
       const res = await fetch('/api/parse-command', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ command: editCommandText, videoDuration }),
       })
       const result = await res.json()
