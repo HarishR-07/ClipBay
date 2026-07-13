@@ -140,7 +140,7 @@ export default function UploadVideo({ session }) {
       saveToHistory(url)
       await supabase.from('drafts').delete().eq('user_id', session.user.id)
     } catch (err) {
-      setError('Rendering failed: ' + err.message)
+      setError('Rendering failed: ' + friendlyError(err.message))
     }
     setRendering(false)
   }
@@ -296,7 +296,7 @@ export default function UploadVideo({ session }) {
       setScript(result.script)
       suggestMusic(result.mood)
     } catch (err) {
-      setError('Analysis failed: ' + err.message)
+      setError('Analysis failed: ' + friendlyError(err.message))
     }
     setAnalyzing(false)
   }
@@ -315,7 +315,7 @@ export default function UploadVideo({ session }) {
       if (result.error) throw new Error(result.error)
       setMusicTracks(result.tracks || [])
     } catch (err) {
-      setError('Music suggestion failed: ' + err.message)
+      setError('Music suggestion failed: ' + friendlyError(err.message))
     }
     setLoadingMusic(false)
   }
@@ -354,7 +354,7 @@ export default function UploadVideo({ session }) {
       setAudioUrl(audioSrc)
       setCaptions(result.captions || [])
     } catch (err) {
-      setError('Voice generation failed: ' + err.message)
+      setError('Voice generation failed: ' + friendlyError(err.message))
     }
     setGeneratingVoice(false)
   }
@@ -374,7 +374,7 @@ export default function UploadVideo({ session }) {
       setParsedCommands((prev) => [...prev, { ...result, rawText: commandText, overlayImage: null, overlayImageUrl: null }])
       setCommandText('')
     } catch (err) {
-      setError('Command parsing failed: ' + err.message)
+      setError('Command parsing failed: ' + friendlyError(err.message))
     }
     setParsingCommand(false)
   }
@@ -458,7 +458,7 @@ export default function UploadVideo({ session }) {
       )
       setEditingCommandIndex(null)
     } catch (err) {
-      setError('Command update failed: ' + err.message)
+      setError('Command update failed: ' + friendlyError(err.message))
     }
     setParsingCommand(false)
   }
