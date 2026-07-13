@@ -4,6 +4,7 @@ import { Upload, Film, LogOut, CheckCircle2, Sparkles, Music, Wand2, Image as Im
 import History from './History'
 import { extractFrames, getFrameAt } from '../extractFrames'
 import { renderVideoWithOverlays } from '../videoRenderer'
+import { getBeatAlignedStart } from '../beatMatch'
 export default function UploadVideo({ session }) {
   const [view, setView] = useState('editor') // 'editor' | 'history'
   const [referenceFile, setReferenceFile] = useState(null)
@@ -45,6 +46,18 @@ export default function UploadVideo({ session }) {
   const [openaiVoice, setOpenaiVoice] = useState('alloy')
   const [elevenlabsVoice, setElevenlabsVoice] = useState('21m00Tcm4TlvDq8ikWAM')
   const [loadingMusic, setLoadingMusic] = useState(false)
+  const [musicOffsets, setMusicOffsets] = useState({})
+
+  const handleAudioLoaded = async (audioUrl, e) => {
+    if (!audioUrl) return
+    if (musicOffsets[audioUrl] !== undefined) {
+      e.target.currentTime = musicOffsets[audioUrl]
+      return
+    }
+    const offset = await getBeatAlignedStart(audioUrl)
+    setMusicOffsets((prev) => ({ ...prev, [audioUrl]: offset }))
+    e.target.currentTime = offset
+  }
   const [musicTracks, setMusicTracks] = useState([])
   const [selectedTrack, setSelectedTrack] = useState(null)
   const [ownMusicFile, setOwnMusicFile] = useState(null)
@@ -745,7 +758,7 @@ export default function UploadVideo({ session }) {
                       {musicTracks.map((track, i) => (
                         <div key={i} style={{ padding: '10px', background: '#14121C', border: selectedTrack?.name === track.name ? '1px solid #FF9F45' : '1px solid #2E2A3F', borderRadius: '8px', marginBottom: '8px' }}>
                           <div style={{ fontSize: '13px', marginBottom: '6px' }}>{track.name} — {track.artist}</div>
-                          <audio controls src={track.audioUrl} style={{ width: '100%', height: '32px' }} />
+                          <audio controls src={track.audioUrl} onLoadedMetadata={(e) => handleAudioLoaded(track.audioUrl, e)} style={{ width: '100%', height: '32px' }} />
                           <button
                             onClick={() => setSelectedTrack(track)}
                             style={{ ...btnStyle, marginTop: '6px', padding: '6px', fontSize: '12px', background: selectedTrack?.name === track.name ? '#FF9F45' : '#2E2A3F', color: selectedTrack?.name === track.name ? '#14121C' : '#F5F3FA' }}
