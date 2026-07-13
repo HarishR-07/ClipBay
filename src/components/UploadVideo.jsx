@@ -426,23 +426,55 @@ export default function UploadVideo({ session }) {
 };
 
   const suggestMusic = async (moodValue) => {
-    setLoadingMusic(true)
-    setMusicTracks([])
-    try {
-      const searchMood = referenceStyle?.musicMood || moodValue
-      const res = await fetch('/api/suggest-music', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ mood: searchMood, videoDuration }),
-      })
-      const result = await res.json()
-      if (result.error) throw new Error(result.error)
-      setMusicTracks(result.tracks || [])
-    } catch (err) {
-      setError('Music suggestion failed: ' + friendlyError(err.message))
+  setLoadingMusic(true);
+  setError("");
+  setMusicTracks([]);
+  setProgress("Finding matching music...");
+
+  try {
+    const searchMood = referenceStyle?.musicMood || moodValue;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+
+    const res = await fetch("/api/suggest-music", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        mood: searchMood,
+        videoDuration,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      throw new Error(`Server returned ${res.status}`);
     }
-    setLoadingMusic(false)
+
+    const result = await res.json();
+
+    if (result.error) {
+      throw new Error(result.error);
+    }
+
+    setMusicTracks(result.tracks || []);
+
+    setProgress("Music selected!");
+  } catch (err) {
+    if (err.name === "AbortError") {
+      setError("Music search timed out. Please try again.");
+    } else {
+      setError("Music suggestion failed: " + friendlyError(err.message));
+    }
+  } finally {
+    setLoadingMusic(false);
   }
+};
 
   const handleOwnMusicSelect = async (e) => {
     const selected = e.target.files[0]
