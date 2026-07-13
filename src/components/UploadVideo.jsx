@@ -371,25 +371,60 @@ export default function UploadVideo({ session }) {
   }
 
   const analyzeVideo = async (selectedFile) => {
-    setAnalyzing(true)
-    setError('')
-    try {
-      const frames = await extractFrames(selectedFile)
-      const res = await fetch('/api/analyze-video', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ frames }),
-      })
-      const result = await res.json()
-      if (result.error) throw new Error(result.error)
-      setMood(result.mood)
-      setScript(result.script)
-      suggestMusic(result.mood)
-    } catch (err) {
-      setError('Analysis failed: ' + friendlyError(err.message))
+  const analyzeVideo = async (selectedFile) => {
+  setAnalyzing(true);
+  setError("");
+  setProgress("Extracting frames...");
+
+  try {
+    const frames = await extractFrames(selectedFile);
+
+    setProgress("Analyzing video...");
+
+    const controller = new AbortController();
+
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
+    const res = await fetch("/api/analyze-video", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ frames }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      throw new Error(`Server returned ${res.status}`);
     }
-    setAnalyzing(false)
+
+    const result = await res.json();
+
+    if (result.error) {
+      throw new Error(result.error);
+    }
+
+    setMood(result.mood);
+    setScript(result.script);
+
+    setProgress("Finding matching music...");
+
+    await suggestMusic(result.mood);
+
+    setProgress("Analysis complete!");
+  } catch (err) {
+    if (err.name === "AbortError") {
+      setError("Request timed out. Please try again.");
+    } else {
+      setError("Analysis failed: " + friendlyError(err.message));
+    }
+  } finally {
+    setAnalyzing(false);
   }
+};
 
   const suggestMusic = async (moodValue) => {
     setLoadingMusic(true)
