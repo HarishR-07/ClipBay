@@ -754,10 +754,42 @@ export default function UploadVideo({ session }) {
                                 style={{ display: 'none' }}
                               />
                               {cmd.overlayImageUrl && cmd.previewFrameUrl && (
-                                <div style={{ ... the new draggable preview block ... }}>
-                                  ...
-                                </div>
-                              )}
+  <div
+    style={{
+      position: 'relative',
+      width: '100%',
+      aspectRatio: '9/16',
+      maxHeight: '220px',
+      backgroundImage: `url(${cmd.previewFrameUrl})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      borderRadius: '8px',
+      marginTop: '8px',
+      overflow: 'hidden',
+      touchAction: 'none',
+    }}
+  >
+    <img
+      src={cmd.overlayImageUrl}
+      onPointerDown={startDrag(i)}
+      style={{
+        position: 'absolute',
+        left: `${cmd.customPosition?.x ?? 50}%`,
+        top: `${cmd.customPosition?.y ?? 50}%`,
+        transform: 'translate(-50%, -50%)',
+        width: '60px',
+        height: '60px',
+        objectFit: 'cover',
+        borderRadius: '6px',
+        border: '2px solid #FF9F45',
+        cursor: 'grab',
+      }}
+    />
+    <div style={{ position: 'absolute', bottom: '4px', right: '6px', fontSize: '10px', color: '#F5F3FA', background: 'rgba(0,0,0,0.5)', padding: '2px 6px', borderRadius: '4px' }}>
+      Drag to position
+    </div>
+  </div>
+)}
                             </div>
                           )}
                             </div>
