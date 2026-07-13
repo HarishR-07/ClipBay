@@ -1,6 +1,7 @@
 export async function extractFrames(file, count = 5) {
   const video = document.createElement('video')
   const objectUrl = URL.createObjectURL(file)
+video.src = objectUrl
   video.src = objectUrl
   video.muted = true
   await new Promise((res) => (video.onloadedmetadata = res))
