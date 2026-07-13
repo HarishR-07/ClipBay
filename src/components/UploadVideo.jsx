@@ -364,8 +364,11 @@ export default function UploadVideo({ session }) {
       setParsedCommands([])
       const duration = await getVideoDuration(selected)
       setVideoDuration(duration)
-      if (duration > 90) {
-        setLengthWarning(`This video is ${Math.round(duration)}s long. Rendering (especially with overlays, effects, or captions) happens in your browser and can take several minutes, or run out of memory, on longer clips like this. Under 60s is smoothest.`)
+      if (duration > 60) {
+  setLengthWarning(
+    `This video is ${Math.round(duration)}s long. For the best experience, free users should upload videos under 60 seconds. Longer videos may take much longer to process.`
+  )
+}
       }
     }
   }
