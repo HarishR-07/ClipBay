@@ -152,6 +152,7 @@ export default function UploadVideo({ session }) {
   const [commandText, setCommandText] = useState('')
   const [parsingCommand, setParsingCommand] = useState(false)
   const [parsedCommands, setParsedCommands] = useState([])
+  const [commandUndoStack, setCommandUndoStack] = useState([])
   const [videoDuration, setVideoDuration] = useState(0)
   const [resumeDraft, setResumeDraft] = useState(null)
 
@@ -376,12 +377,21 @@ export default function UploadVideo({ session }) {
       })
       const result = await res.json()
       if (result.error) throw new Error(result.error)
+      setCommandUndoStack((prev) => [...prev, parsedCommands])
       setParsedCommands((prev) => [...prev, { ...result, rawText: commandText, overlayImage: null, overlayImageUrl: null }])
       setCommandText('')
     } catch (err) {
       setError('Command parsing failed: ' + friendlyError(err.message))
     }
     setParsingCommand(false)
+  }
+
+  const undoLastCommandChange = () => {
+    setCommandUndoStack((prev) => {
+      if (prev.length === 0) return prev
+      setParsedCommands(prev[prev.length - 1])
+      return prev.slice(0, -1)
+    })
   }
 
   const attachImageToCommand = async (index, e) => {
@@ -434,6 +444,7 @@ export default function UploadVideo({ session }) {
   }
 
   const removeCommand = (index) => {
+    setCommandUndoStack((prev) => [...prev, parsedCommands])
     setParsedCommands((prev) => prev.filter((_, i) => i !== index))
   }
   const [editingCommandIndex, setEditingCommandIndex] = useState(null)
@@ -456,6 +467,7 @@ export default function UploadVideo({ session }) {
       })
       const result = await res.json()
       if (result.error) throw new Error(result.error)
+      setCommandUndoStack((prev) => [...prev, parsedCommands])
       setParsedCommands((prev) =>
         prev.map((cmd, i) =>
           i === index ? { ...cmd, ...result, rawText: editCommandText } : cmd
@@ -514,6 +526,7 @@ export default function UploadVideo({ session }) {
     setHistoryError('')
     setCommandText('')
     setParsedCommands([])
+    setCommandUndoStack([])
     setVideoDuration(0)
   }
 
@@ -864,6 +877,14 @@ export default function UploadVideo({ session }) {
 
                   {parsedCommands.length > 0 && (
                     <div style={{ marginTop: '12px' }}>
+                      {commandUndoStack.length > 0 && (
+                        <button
+                          onClick={undoLastCommandChange}
+                          style={{ ...btnStyle, marginBottom: '8px', width: '100%', fontSize: '12px' }}
+                        >
+                          Undo last change
+                        </button>
+                      )}
                       {parsedCommands.map((cmd, i) => (
                         <div key={i} style={{ padding: '10px', background: '#14121C', border: '1px solid #2E2A3F', borderRadius: '8px', marginBottom: '8px' }}>
                           <div style={{ fontSize: '12px', color: '#9691A8', marginBottom: '4px' }}>"{cmd.rawText}"</div>
