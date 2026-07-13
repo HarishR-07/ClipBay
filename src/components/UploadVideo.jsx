@@ -873,8 +873,7 @@ export default function UploadVideo({ session }) {
                             {cmd.action === 'unknown' && 'Could not understand this command'}
                           </div>
 
-                          
-                              {cmd.action === 'add_overlay' && (
+                          {cmd.action === 'add_overlay' && (
                             <div style={{ marginBottom: '8px' }}>
                               <label
   htmlFor={`overlay-image-${i}`}
@@ -927,8 +926,6 @@ export default function UploadVideo({ session }) {
     </div>
   </div>
 )}
-                            </div>
-                          )}
                             </div>
                           )}
 
@@ -999,14 +996,3 @@ export default function UploadVideo({ session }) {
     </div>
   )
 }
-
-
-
-
-
-
-
-
-
-
-                              
