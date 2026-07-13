@@ -10,6 +10,13 @@ export default async function handler(req, res) {
 
   const { script, provider, voice } = req.body;
 
+  if (!script || typeof script !== 'string') {
+    return res.status(400).json({ error: 'Script is required' });
+  }
+  if (script.length > 3000) {
+    return res.status(400).json({ error: 'Script is too long (max 3000 characters)' });
+  }
+
   try {
     let base64, mimeType;
 
