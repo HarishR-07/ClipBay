@@ -1,7 +1,12 @@
+ import { requireUser } from './_lib/auth.js';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  const user = await requireUser(req, res);
+  if (!user) return; // requireUser already sent the 401 response
 
   const { script, provider, voice } = req.body;
 
