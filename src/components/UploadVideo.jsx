@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
-import { Upload, Film, LogOut, CheckCircle2, Sparkles, Music, Wand2, Image as ImageIcon, Download, RotateCcw, Clock } from 'lucide-react'
+import { Upload, Film, LogOut, CheckCircle2, Sparkles, Music, Wand2, Image as ImageIcon, Download, RotateCcw, Clock, Trash2 } from 'lucide-react'
 import History from './History'
 import { extractFrames, getFrameAt } from '../extractFrames'
 import { renderVideoWithOverlays } from '../videoRenderer'
@@ -238,6 +238,58 @@ export default function UploadVideo({ session }) {
     }
   }
 
+  const [presets, setPresets] = useState([])
+  const [loadingPresets, setLoadingPresets] = useState(true)
+  const [presetName, setPresetName] = useState('')
+  const [savingPreset, setSavingPreset] = useState(false)
+  const [presetSaved, setPresetSaved] = useState(false)
+
+  useEffect(() => {
+    supabase
+      .from('style_presets')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        setPresets(data || [])
+        setLoadingPresets(false)
+      })
+  }, [])
+
+  const saveCurrentAsPreset = async () => {
+    if (!presetName.trim() || !referenceStyle) return
+    setSavingPreset(true)
+    try {
+      const { data, error: insertErr } = await supabase
+        .from('style_presets')
+        .insert({ user_id: session.user.id, name: presetName.trim(), style: referenceStyle })
+        .select()
+        .single()
+      if (insertErr) throw insertErr
+      setPresets((prev) => [data, ...prev])
+      setPresetName('')
+      setPresetSaved(true)
+    } catch (err) {
+      setError('Could not save template: ' + friendlyError(err.message))
+    }
+    setSavingPreset(false)
+  }
+
+  const applyPreset = (preset) => {
+    setReferenceStyle(preset.style)
+    setPresetSaved(true)
+    setReferenceStep(false)
+  }
+
+  const deletePreset = async (preset) => {
+    try {
+      await supabase.from('style_presets').delete().eq('id', preset.id)
+      setPresets((prev) => prev.filter((p) => p.id !== preset.id))
+    } catch (err) {
+      setError('Could not delete template: ' + friendlyError(err.message))
+    }
+  }
+
   const analyzeReference = async () => {
     if (!referenceFile) return
     setAnalyzingReference(true)
@@ -252,6 +304,7 @@ export default function UploadVideo({ session }) {
       const result = await res.json()
       if (result.error) throw new Error(result.error)
       setReferenceStyle(result)
+      setPresetSaved(false)
       setReferenceStep(false)
     } catch (err) {
       setError('Reference analysis failed: ' + friendlyError(err.message))
@@ -539,6 +592,8 @@ export default function UploadVideo({ session }) {
     setReferenceFile(null)
     setReferenceStyle(null)
     setReferenceStep(true)
+    setPresetName('')
+    setPresetSaved(false)
     setFile(null)
     setUploadedPath(null)
     setError('')
