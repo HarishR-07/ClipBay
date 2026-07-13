@@ -25,7 +25,7 @@ Determine:
 - timestampSeconds: when it should appear (number, or null if not specified — default to 0)
 - durationSeconds: how long it should show (number, default 3 if not specified)
 - position: one of "top-left", "top-right", "bottom-left", "bottom-right", "center" (default "center" if not specified)
-- effectType: if action is "add_effect", describe it briefly (e.g. "fade", "zoom", "black and white"), else null
+- effectType: if action is "add_effect", this MUST be exactly one of these strings: "black_and_white", "blur", "vignette", "fade", "zoom", "shake". Pick whichever is the closest match to what the user described. If action is not "add_effect", set this to null.
 
 Respond ONLY as JSON: {"action": "...", "timestampSeconds": 0, "durationSeconds": 3, "position": "...", "effectType": null}`,
         },
