@@ -224,9 +224,18 @@ export default function UploadVideo({ session }) {
     await supabase.from('drafts').delete().eq('user_id', session.user.id)
     setResumeDraft(null)
   }
-  const handleReferenceSelect = (e) => {
+  const handleReferenceSelect = async (e) => {
     const selected = e.target.files[0]
-    if (selected) setReferenceFile(selected)
+    if (selected) {
+      setError('')
+      const validationError = await validateVideoFile(selected)
+      if (validationError) {
+        setError(validationError)
+        e.target.value = ''
+        return
+      }
+      setReferenceFile(selected)
+    }
   }
 
   const analyzeReference = async () => {
@@ -264,20 +273,43 @@ export default function UploadVideo({ session }) {
   }
 
   const [lengthWarning, setLengthWarning] = useState('')
+const [lengthWarning, setLengthWarning] = useState('')
+
+  const MAX_VIDEO_SECONDS = 180
+  const MAX_VIDEO_BYTES = 300 * 1024 * 1024
+  const MAX_SCRIPT_LENGTH = 3000
+  const MAX_COMMAND_LENGTH = 300
+
+  const validateVideoFile = async (selectedFile) => {
+    if (selectedFile.size > MAX_VIDEO_BYTES) {
+      return `That file is ${(selectedFile.size / (1024 * 1024)).toFixed(0)}MB — please use a video under 300MB.`
+    }
+    const duration = await getVideoDuration(selectedFile)
+    if (duration > MAX_VIDEO_SECONDS) {
+      return `This video is ${Math.round(duration)}s long — please use a clip under 3 minutes (180s).`
+    }
+    return null
+  }
 
   const handleFileSelect = async (e) => {
     const selected = e.target.files[0]
     if (selected) {
+      setError('')
+      setLengthWarning('')
+      const validationError = await validateVideoFile(selected)
+      if (validationError) {
+        setError(validationError)
+        e.target.value = ''
+        return
+      }
       setFile(selected)
       setUploadedPath(null)
-      setError('')
       setMood(null)
       setScript('')
       setAudioUrl(null)
       setMusicTracks([])
       setSelectedTrack(null)
       setParsedCommands([])
-      setLengthWarning('')
       const duration = await getVideoDuration(selected)
       setVideoDuration(duration)
       if (duration > 90) {
@@ -706,11 +738,17 @@ export default function UploadVideo({ session }) {
                   Mood: {mood}
                 </div>
                 {editingScript ? (
-                  <textarea
-                    value={script}
-                    onChange={(e) => setScript(e.target.value)}
-                    style={{ width: '100%', minHeight: '100px', background: '#14121C', color: '#F5F3FA', border: '1px solid #2E2A3F', borderRadius: '8px', padding: '10px', fontSize: '13px' }}
-                  />
+                  <>
+                    <textarea
+                      value={script}
+                      onChange={(e) => setScript(e.target.value.slice(0, MAX_SCRIPT_LENGTH))}
+                      maxLength={MAX_SCRIPT_LENGTH}
+                      style={{ width: '100%', minHeight: '100px', background: '#14121C', color: '#F5F3FA', border: '1px solid #2E2A3F', borderRadius: '8px', padding: '10px', fontSize: '13px' }}
+                    />
+                    <div style={{ fontSize: '11px', color: '#6B6780', textAlign: 'right', marginTop: '4px' }}>
+                      {script.length}/{MAX_SCRIPT_LENGTH}
+                    </div>
+                  </>
                 ) : (
                   <p style={{ fontSize: '14px', lineHeight: '1.5' }}>{script}</p>
                 )}
@@ -867,6 +905,7 @@ export default function UploadVideo({ session }) {
                       type="text"
                       value={commandText}
                       onChange={(e) => setCommandText(e.target.value)}
+                      maxLength={MAX_COMMAND_LENGTH}
                       placeholder='e.g. "add sparkle overlay at 5 seconds, top right"'
                       style={{ flex: 1, padding: '10px', background: '#14121C', color: '#F5F3FA', border: '1px solid #2E2A3F', borderRadius: '8px', fontSize: '13px' }}
                     />
@@ -956,6 +995,7 @@ export default function UploadVideo({ session }) {
                                 type="text"
                                 value={editCommandText}
                                 onChange={(e) => setEditCommandText(e.target.value)}
+                                maxLength={MAX_COMMAND_LENGTH}
                                 style={{ flex: 1, padding: '6px', background: '#1E1B2A', color: '#F5F3FA', border: '1px solid #2E2A3F', borderRadius: '6px', fontSize: '12px' }}
                               />
                               <button onClick={() => saveEditCommand(i)} disabled={parsingCommand} style={{ ...btnStyle, padding: '4px 8px', fontSize: '11px' }}>Save</button>
