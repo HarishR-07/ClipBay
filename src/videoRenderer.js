@@ -114,7 +114,9 @@ export async function renderVideoWithOverlays(
     }
   })
   overlaysToRender.forEach((cmd, i) => {
-    const pos = positionMap[cmd.position] || positionMap.center
+    const pos = cmd.customPosition
+      ? `${cmd.customPosition.x}*W/100-w/2:${cmd.customPosition.y}*H/100-h/2`
+      : (positionMap[cmd.position] || positionMap.center)
     const start = cmd.timestampSeconds
     const end = start + cmd.durationSeconds
     const outLabel = `v${i + 1}`
