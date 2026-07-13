@@ -43,5 +43,13 @@ ctx.clearRect(0, 0, canvas.width, canvas.height)
 canvas.width = 0
 canvas.height = 0
 
+const image = canvas.toDataURL("image/jpeg", 0.7)
+
+ctx.clearRect(0, 0, canvas.width, canvas.height)
+canvas.width = 0
+canvas.height = 0
+
+URL.revokeObjectURL(objectUrl)
+
 return image
 }
