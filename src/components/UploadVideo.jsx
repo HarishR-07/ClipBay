@@ -697,6 +697,34 @@ export default function UploadVideo({ session }) {
               Optional. Upload a video whose style (fonts, color, pacing, music vibe) you want to match. You can skip this.
             </p>
 
+            {!loadingPresets && presets.length > 0 && (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontSize: '12px', color: '#9691A8', marginBottom: '8px' }}>Or use a saved style:</div>
+                {presets.map((preset) => (
+                  <div
+                    key={preset.id}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: '#1E1B2A', border: '2px solid #2E2A3F', borderRadius: '10px', marginBottom: '8px' }}
+                  >
+                    <button
+                      onClick={() => applyPreset(preset)}
+                      style={{ background: 'none', border: 'none', color: '#F5F3FA', fontSize: '13px', fontWeight: 600, textAlign: 'left', flex: 1, cursor: 'pointer' }}
+                    >
+                      {preset.name}
+                      <div style={{ fontSize: '11px', color: '#6B6780', fontWeight: 400, marginTop: '2px' }}>
+                        {preset.style.musicMood} · {preset.style.pacing}
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => deletePreset(preset)}
+                      style={{ background: 'none', border: 'none', color: '#FF5D8F', cursor: 'pointer', padding: '6px' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <label htmlFor="reference-upload" style={boxStyle}>
               <Sparkles size={26} color="#6B6780" style={{ margin: '0 auto 10px' }} />
               <div style={{ fontSize: '14px', color: referenceFile ? '#F5F3FA' : '#9691A8' }}>
@@ -739,6 +767,30 @@ export default function UploadVideo({ session }) {
                   Pacing: {referenceStyle.pacing}<br />
                   Music vibe: {referenceStyle.musicMood}
                 </div>
+
+                {presetSaved ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#C6F135', marginTop: '10px' }}>
+                    <CheckCircle2 size={13} /> Saved as template
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                    <input
+                      type="text"
+                      value={presetName}
+                      onChange={(e) => setPresetName(e.target.value)}
+                      placeholder="Name this style..."
+                      maxLength={60}
+                      style={{ flex: 1, padding: '8px', background: '#14121C', color: '#F5F3FA', border: '1px solid #2E2A3F', borderRadius: '8px', fontSize: '12px' }}
+                    />
+                    <button
+                      onClick={saveCurrentAsPreset}
+                      disabled={!presetName.trim() || savingPreset}
+                      style={{ ...btnStyle, flex: '0 0 auto', padding: '8px 12px', fontSize: '12px' }}
+                    >
+                      {savingPreset ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
