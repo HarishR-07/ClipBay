@@ -273,7 +273,6 @@ export default function UploadVideo({ session }) {
   }
 
   const [lengthWarning, setLengthWarning] = useState('')
-const [lengthWarning, setLengthWarning] = useState('')
 
   const MAX_VIDEO_SECONDS = 180
   const MAX_VIDEO_BYTES = 300 * 1024 * 1024
