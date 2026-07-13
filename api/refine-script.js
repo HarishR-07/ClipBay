@@ -14,6 +14,13 @@ export default async function handler(req, res) {
   try {
     const { script, instruction, mood } = req.body;
 
+    if (!script || script.length > 3000) {
+      return res.status(400).json({ error: 'Script must be under 3000 characters' });
+    }
+    if (!instruction || instruction.length > 300) {
+      return res.status(400).json({ error: 'Instruction must be under 300 characters' });
+    }
+
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-5',
       max_tokens: 400,
