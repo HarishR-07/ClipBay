@@ -491,29 +491,57 @@ export default function UploadVideo({ session }) {
   }
 
   const generateVoice = async (provider) => {
-    setGeneratingVoice(true)
-    setError('')
-    setAudioUrl(null)
-    try {
-      const res = await fetch('/api/generate-voice', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({
-          script,
-          provider,
-          voice: provider === 'openai' ? openaiVoice : elevenlabsVoice,
-        }),
-      })
-      const result = await res.json()
-      if (result.error) throw new Error(result.error)
-      const audioSrc = `data:${result.mimeType};base64,${result.audio}`
-      setAudioUrl(audioSrc)
-      setCaptions(result.captions || [])
-    } catch (err) {
-      setError('Voice generation failed: ' + friendlyError(err.message))
+  setGeneratingVoice(true);
+  setError("");
+  setAudioUrl(null);
+  setProgress("Generating voice...");
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+
+    const res = await fetch("/api/generate-voice", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        script,
+        provider,
+        voice: provider === "openai" ? openaiVoice : elevenlabsVoice,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      throw new Error(`Server returned ${res.status}`);
     }
-    setGeneratingVoice(false)
+
+    const result = await res.json();
+
+    if (result.error) {
+      throw new Error(result.error);
+    }
+
+    const audioSrc = `data:${result.mimeType};base64,${result.audio}`;
+
+    setAudioUrl(audioSrc);
+    setCaptions(result.captions || []);
+
+    setProgress("Voice generated successfully!");
+  } catch (err) {
+    if (err.name === "AbortError") {
+      setError("Voice generation timed out. Please try again.");
+    } else {
+      setError("Voice generation failed: " + friendlyError(err.message));
+    }
+  } finally {
+    setGeneratingVoice(false);
   }
+};
 
   const submitCommand = async () => {
     if (!commandText.trim()) return
