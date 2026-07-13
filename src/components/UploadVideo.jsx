@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { Upload, Film, LogOut, CheckCircle2, Sparkles, Music, Wand2, Image as ImageIcon, Download, RotateCcw, Clock } from 'lucide-react'
 import History from './History'
-import { extractFrames } from '../extractFrames'
+import { extractFrames, getFrameAt } from '../extractFrames'
 import { renderVideoWithOverlays } from '../videoRenderer'
 export default function UploadVideo({ session }) {
   const [view, setView] = useState('editor') // 'editor' | 'history'
@@ -284,14 +284,47 @@ export default function UploadVideo({ session }) {
     setParsingCommand(false)
   }
 
-  const attachImageToCommand = (index, e) => {
+  const attachImageToCommand = async (index, e) => {
     const selected = e.target.files[0]
     if (!selected) return
+    const overlayImageUrl = URL.createObjectURL(selected)
+    let previewFrameUrl = null
+    try {
+      previewFrameUrl = await getFrameAt(file, parsedCommands[index].timestampSeconds)
+    } catch (err) {
+      console.error('Could not load preview frame:', err)
+    }
     setParsedCommands((prev) =>
       prev.map((cmd, i) =>
-        i === index ? { ...cmd, overlayImage: selected, overlayImageUrl: URL.createObjectURL(selected) } : cmd
+        i === index
+          ? { ...cmd, overlayImage: selected, overlayImageUrl, previewFrameUrl, customPosition: cmd.customPosition || { x: 50, y: 50 } }
+          : cmd
       )
     )
+  }
+
+  const startDrag = (index) => (e) => {
+    e.preventDefault()
+    const container = e.currentTarget.parentElement
+    const rect = container.getBoundingClientRect()
+
+    const move = (moveEvent) => {
+      const clientX = moveEvent.touches ? moveEvent.touches[0].clientX : moveEvent.clientX
+      const clientY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY
+      let x = ((clientX - rect.left) / rect.width) * 100
+      let y = ((clientY - rect.top) / rect.height) * 100
+      x = Math.max(0, Math.min(100, x))
+      y = Math.max(0, Math.min(100, y))
+      setParsedCommands((prev) => prev.map((cmd, i) => (i === index ? { ...cmd, customPosition: { x, y } } : cmd)))
+    }
+
+    const end = () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', end)
+    }
+
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', end)
   }
 
   const removeCommand = (index) => {
@@ -704,9 +737,26 @@ export default function UploadVideo({ session }) {
                                 onChange={(e) => attachImageToCommand(i, e)}
                                 style={{ display: 'none' }}
                               />
-                              {cmd.overlayImageUrl && (
-                                <img src={cmd.overlayImageUrl} alt="overlay preview" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '6px', marginTop: '6px' }} />
+                              {cmd.action === 'add_overlay' && (
+                            <div style={{ marginBottom: '8px' }}>
+                              <label htmlFor={`overlay-image-${i}`} style={{ ... }}>
+                                <ImageIcon size={14} />
+                                {cmd.overlayImage ? cmd.overlayImage.name : 'Attach overlay image'}
+                              </label>
+                              <input
+                                id={`overlay-image-${i}`}
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => attachImageToCommand(i, e)}
+                                style={{ display: 'none' }}
+                              />
+                              {cmd.overlayImageUrl && cmd.previewFrameUrl && (
+                                <div style={{ ... the new draggable preview block ... }}>
+                                  ...
+                                </div>
                               )}
+                            </div>
+                          )}
                             </div>
                           )}
 
