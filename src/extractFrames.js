@@ -37,5 +37,11 @@ export async function getFrameAt(file, timeSeconds) {
   canvas.height = (video.videoHeight / video.videoWidth) * 360
   const ctx = canvas.getContext('2d')
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-  return canvas.toDataURL('image/jpeg', 0.7)
+  const image = canvas.toDataURL("image/jpeg", 0.7)
+
+ctx.clearRect(0, 0, canvas.width, canvas.height)
+canvas.width = 0
+canvas.height = 0
+
+return image
 }
