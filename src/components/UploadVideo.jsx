@@ -813,29 +813,29 @@ export default function UploadVideo({ session }) {
             </div>
           </div>
         )}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', rowGap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'linear-gradient(135deg, #FF5D8F, #FF9F45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Film size={17} color="#14121C" />
             </div>
             <span style={{ fontWeight: 700, fontSize: '15px', letterSpacing: '0.05em' }}>CLIP BAY</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '14px' }}>
             <button
               onClick={() => setView('history')}
-              style={{ background: 'none', border: 'none', color: '#6B6780', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}
+              style={{ background: 'none', border: 'none', color: '#6B6780', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer', padding: '6px' }}
             >
               <Clock size={14} /> History
             </button>
             <button
               onClick={resetAll}
-              style={{ background: 'none', border: 'none', color: '#6B6780', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}
+              style={{ background: 'none', border: 'none', color: '#6B6780', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer', padding: '6px' }}
             >
               <RotateCcw size={14} /> Start over
             </button>
             <button
               onClick={() => supabase.auth.signOut()}
-              style={{ background: 'none', border: 'none', color: '#6B6780', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}
+              style={{ background: 'none', border: 'none', color: '#6B6780', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer', padding: '6px' }}
             >
               <LogOut size={14} /> Log out
             </button>
@@ -1042,12 +1042,12 @@ export default function UploadVideo({ session }) {
                 ) : (
                   <p style={{ fontSize: '14px', lineHeight: '1.5' }}>{script}</p>
                 )}
-                <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
-                  <button onClick={() => analyzeVideo(file)} style={btnStyle}>Regenerate</button>
-                  <button onClick={() => refineScript('make it noticeably shorter')} disabled={refiningScript} style={btnStyle}>Shorter</button>
-                  <button onClick={() => refineScript('make it punchier and more energetic')} disabled={refiningScript} style={btnStyle}>Punchier</button>
-                  <button onClick={() => refineScript('make it noticeably longer, add more detail')} disabled={refiningScript} style={btnStyle}>Longer</button>
-                  <button onClick={() => setEditingScript(!editingScript)} style={btnStyle}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '12px' }}>
+                  <button onClick={() => analyzeVideo(file)} style={{ ...btnStyle, minWidth: '100px' }}>Regenerate</button>
+                  <button onClick={() => refineScript('make it noticeably shorter')} disabled={refiningScript} style={{ ...btnStyle, minWidth: '100px' }}>Shorter</button>
+                  <button onClick={() => refineScript('make it punchier and more energetic')} disabled={refiningScript} style={{ ...btnStyle, minWidth: '100px' }}>Punchier</button>
+                  <button onClick={() => refineScript('make it noticeably longer, add more detail')} disabled={refiningScript} style={{ ...btnStyle, minWidth: '100px' }}>Longer</button>
+                  <button onClick={() => setEditingScript(!editingScript)} style={{ ...btnStyle, minWidth: '100px' }}>
                     {editingScript ? 'Done editing' : 'Write my own'}
                   </button>
                 </div>
