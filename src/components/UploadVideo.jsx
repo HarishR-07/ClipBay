@@ -371,7 +371,6 @@ export default function UploadVideo({ session }) {
 }
       }
     }
-  }
 
   const analyzeVideo = async (selectedFile) => {
   setAnalyzing(true);
