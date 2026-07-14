@@ -141,7 +141,16 @@ export default function UploadVideo({ session }) {
     if (!savedProject) return
     setSavingToHistory(true)
     try {
-      await supabase.storage.from('videos').remove([savedProject.videoPath])const handleRender = async () => {
+      await supabase.storage.from('videos').remove([savedProject.videoPath])
+      await supabase.from('projects').delete().eq('id', savedProject.id)
+      setSavedProject(null)
+    } catch (err) {
+      setHistoryError('Could not undo: ' + friendlyError(err.message))
+    }
+    setSavingToHistory(false)
+  }
+
+  const handleRender = async () => {
     setRendering(true)
     setRenderProgress(0)
     setEstimatedSecondsRemaining(null)
