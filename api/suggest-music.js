@@ -1,4 +1,5 @@
 import { requireUser } from './_lib/auth.js';
+import { safeErrorMessage } from './_lib/errors.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -33,6 +34,7 @@ export default async function handler(req, res) {
     res.status(200).json({ tracks: tracks.slice(0, 3) });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: safeErrorMessage(err) });
   }
 }
+
