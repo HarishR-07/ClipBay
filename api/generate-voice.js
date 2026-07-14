@@ -1,5 +1,7 @@
  import { requireUser } from './_lib/auth.js';
 import { checkRateLimit } from './_lib/rateLimit.js';
+import { withRetry } from './_lib/retry.js';
+import { safeErrorMessage } from './_lib/errors.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -23,10 +25,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Script is too long (max 3000 characters)' });
   }
 
-  try {
-    let base64, mimeType;
-
-    if (provider === 'openai') {
+  // Each provider call is retried on transient failures before we give up
+  // on it. Factored out so the elevenlabs branch can fall back to this
+  // same function if ElevenLabs is unavailable.
+  async function generateWithOpenAI() {
+    return withRetry(async () => {
       const response = await fetch('https://api.openai.com/v1/audio/speech', {
         method: 'POST',
         headers: {
@@ -39,14 +42,19 @@ export default async function handler(req, res) {
           input: script,
         }),
       });
-
-      if (!response.ok) throw new Error('OpenAI TTS failed');
-
+      if (!response.ok) {
+        const err = new Error('OpenAI TTS failed');
+        err.status = response.status;
+        throw err;
+      }
       const buffer = await response.arrayBuffer();
-      base64 = Buffer.from(buffer).toString('base64');
-      mimeType = 'audio/mpeg';
-    } else if (provider === 'elevenlabs') {
-      const voiceId = voice || '21m00Tcm4TlvDq8ikWAM';
+      return { base64: Buffer.from(buffer).toString('base64'), mimeType: 'audio/mpeg' };
+    });
+  }
+
+  async function generateWithElevenLabs() {
+    const voiceId = voice || '21m00Tcm4TlvDq8ikWAM';
+    return withRetry(async () => {
       const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
         method: 'POST',
         headers: {
@@ -58,12 +66,33 @@ export default async function handler(req, res) {
           model_id: 'eleven_multilingual_v2',
         }),
       });
-
-      if (!response.ok) throw new Error('ElevenLabs TTS failed — check your ElevenLabs subscription/API access');
-
+      if (!response.ok) {
+        const err = new Error('ElevenLabs TTS failed — check your ElevenLabs subscription/API access');
+        err.status = response.status;
+        throw err;
+      }
       const buffer = await response.arrayBuffer();
-      base64 = Buffer.from(buffer).toString('base64');
-      mimeType = 'audio/mpeg';
+      return { base64: Buffer.from(buffer).toString('base64'), mimeType: 'audio/mpeg' };
+    });
+  }
+
+  try {
+    let base64, mimeType, usedFallback = false;
+
+    if (provider === 'openai') {
+      ({ base64, mimeType } = await generateWithOpenAI());
+    } else if (provider === 'elevenlabs') {
+      try {
+        ({ base64, mimeType } = await generateWithElevenLabs());
+      } catch (elevenLabsErr) {
+        // Premium provider unavailable even after retries — degrade
+        // gracefully to the free provider instead of failing the whole
+        // request. The frontend can check `usedFallback` to let the user
+        // know why they got the free voice instead of what they picked.
+        console.error('ElevenLabs failed, falling back to OpenAI:', elevenLabsErr);
+        ({ base64, mimeType } = await generateWithOpenAI());
+        usedFallback = true;
+      }
     } else {
       return res.status(400).json({ error: 'Invalid provider' });
     }
@@ -98,10 +127,10 @@ export default async function handler(req, res) {
       console.error('Caption generation failed (non-fatal):', capErr);
     }
 
-    return res.status(200).json({ audio: base64, mimeType, captions });
+    return res.status(200).json({ audio: base64, mimeType, captions, usedFallback });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: safeErrorMessage(err) });
   }
 }
 
