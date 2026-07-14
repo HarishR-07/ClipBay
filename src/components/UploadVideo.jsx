@@ -84,6 +84,7 @@ export default function UploadVideo({ session }) {
   const [showOwnMusicUpload, setShowOwnMusicUpload] = useState(false)
   const [rendering, setRendering] = useState(false)
   const [renderProgress, setRenderProgress] = useState(0)
+  const [estimatedSecondsRemaining, setEstimatedSecondsRemaining] = useState(null)
   const [renderedVideoUrl, setRenderedVideoUrl] = useState(null)
   const [captions, setCaptions] = useState([])
   const [captionPosition, setCaptionPosition] = useState('bottom')
@@ -140,22 +141,25 @@ export default function UploadVideo({ session }) {
     if (!savedProject) return
     setSavingToHistory(true)
     try {
-      await supabase.storage.from('videos').remove([savedProject.videoPath])
-      await supabase.from('projects').delete().eq('id', savedProject.id)
-      setSavedProject(null)
-    } catch (err) {
-      setHistoryError('Could not undo: ' + friendlyError(err.message))
-    }
-    setSavingToHistory(false)
-  }
-
-  const handleRender = async () => {
+      await supabase.storage.from('videos').remove([savedProject.videoPath])const handleRender = async () => {
     setRendering(true)
     setRenderProgress(0)
+    setEstimatedSecondsRemaining(null)
     setError('')
     setSavedProject(null)
+    const renderStartTime = Date.now()
+    const onRenderProgress = (percent) => {
+      setRenderProgress(percent)
+      // Wait until we have a few real ticks before extrapolating — early
+      // percentages are too noisy to give a meaningful estimate.
+      if (percent > 5) {
+        const elapsedSeconds = (Date.now() - renderStartTime) / 1000
+        const estimatedTotalSeconds = elapsedSeconds / (percent / 100)
+        setEstimatedSecondsRemaining(Math.max(0, Math.round(estimatedTotalSeconds - elapsedSeconds)))
+      }
+    }
     try {
-      const url = await renderVideoWithOverlays(file, parsedCommands, { voiceoverUrl: audioUrl, musicUrl: selectedTrack?.audioUrl }, referenceStyle?.colorValues, videoDuration, captions, captionPosition, captionFontUrl, setRenderProgress)
+      const url = await renderVideoWithOverlays(file, parsedCommands, { voiceoverUrl: audioUrl, musicUrl: selectedTrack?.audioUrl }, referenceStyle?.colorValues, videoDuration, captions, captionPosition, captionFontUrl, onRenderProgress)
       setRenderedVideoUrl(url)
       saveToHistory(url)
       await supabase.from('drafts').delete().eq('user_id', session.user.id)
@@ -1240,7 +1244,9 @@ export default function UploadVideo({ session }) {
 
                 <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #2E2A3F' }}>
                   <button onClick={handleRender} disabled={rendering} style={{ ...primaryBtnStyle, width: '100%', padding: '13px' }}>
-                    {rendering ? `Rendering... ${renderProgress}%` : 'Render final video'}
+                    {rendering
+                      ? `Rendering... ${renderProgress}%${estimatedSecondsRemaining !== null ? ` (~${estimatedSecondsRemaining}s left)` : ''}`
+                      : 'Render final video'}
                   </button>
                   {renderedVideoUrl && (
                     <>
