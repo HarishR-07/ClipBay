@@ -40,6 +40,8 @@ export default function UploadVideo({ session }) {
   const [analyzing, setAnalyzing] = useState(false)
  const [mood, setMood] = useState(null)
   const [script, setScript] = useState('')
+  const [hooks, setHooks] = useState([]);
+const [loadingHooks, setLoadingHooks] = useState(false);
   const [editingScript, setEditingScript] = useState(false)
   const [refiningScript, setRefiningScript] = useState(false)
 
