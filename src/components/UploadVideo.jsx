@@ -359,6 +359,26 @@ export default function UploadVideo({ session }) {
   const MAX_VIDEO_BYTES = 150 * 1024 * 1024
   const MAX_SCRIPT_LENGTH = 3000
   const MAX_COMMAND_LENGTH = 300
+  // Checklist shown during upload/analysis so users see exactly where things
+  // are instead of a bare spinner. Reuses the existing setProgress(...) text
+  // that handleUpload/analyzeVideo/suggestMusic already set — no new state.
+  const PIPELINE_STAGES = [
+    { key: 'upload', label: 'Uploading video' },
+    { key: 'frames', label: 'Extracting frames' },
+    { key: 'analyze', label: 'AI analyzing' },
+    { key: 'music', label: 'Finding matching music' },
+  ]
+
+  const getActiveStageIndex = (progressText) => {
+    if (!progressText) return -1
+    const t = progressText.toLowerCase()
+    if (t.includes('uploading')) return 0
+    if (t.includes('extracting frames')) return 1
+    if (t.includes('analyzing')) return 2
+    if (t.includes('music')) return 3
+    if (t.includes('complete')) return 4
+    return -1
+  }
 
   const validateVideoFile = async (selectedFile) => {
     if (selectedFile.size > MAX_VIDEO_BYTES) {
@@ -964,9 +984,41 @@ export default function UploadVideo({ session }) {
               </div>
             )}
 
-            {analyzing && (
-              <div style={{ marginTop: '16px', textAlign: 'center', color: '#9691A8', fontSize: '13px' }}>
-                Analyzing your footage...
+            {(uploading || analyzing) && (
+              <div style={{ marginTop: '16px', padding: '16px', background: '#1E1B2A', border: '2px solid #2E2A3F', borderRadius: '10px' }}>
+                {PIPELINE_STAGES.map((stage, i) => {
+                  const activeIndex = getActiveStageIndex(progress)
+                  const isDone = activeIndex > i
+                  const isActive = activeIndex === i
+                  return (
+                    <div
+                      key={stage.key}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '6px 0',
+                        fontSize: '13px',
+                        color: isDone ? '#C6F135' : isActive ? '#F5F3FA' : '#6B6780',
+                      }}
+                    >
+                      {isDone ? (
+                        <CheckCircle2 size={14} color="#C6F135" />
+                      ) : (
+                        <span
+                          style={{
+                            width: '14px',
+                            height: '14px',
+                            borderRadius: '50%',
+                            border: isActive ? '2px solid #FF9F45' : '2px solid #2E2A3F',
+                            flexShrink: 0,
+                          }}
+                        />
+                      )}
+                      {stage.label}
+                    </div>
+                  )
+                })}
               </div>
             )}
 
