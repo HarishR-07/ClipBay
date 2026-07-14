@@ -476,6 +476,32 @@ const [loadingHooks, setLoadingHooks] = useState(false);
     setAnalyzing(false);
   }
 };
+  const generateHooks = async () => {
+  if (!script) return;
+
+  setLoadingHooks(true);
+
+  try {
+    const response = await fetch("/api/generate-hooks", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        script,
+      }),
+    });
+
+    const data = await response.json();
+
+    setHooks(data.hooks || []);
+  } catch (err) {
+    console.error(err);
+    alert("Failed to generate hooks.");
+  }
+
+  setLoadingHooks(false);
+};
 
   const suggestMusic = async (moodValue) => {
   setLoadingMusic(true);
