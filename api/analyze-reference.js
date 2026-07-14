@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { requireUser } from './_lib/auth.js';
+import { safeErrorMessage } from './_lib/errors.js';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -45,6 +46,6 @@ Respond ONLY as JSON: {"fontStyle": "...", "colorGrading": "...", "pacing": "...
     res.status(200).json(result);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: safeErrorMessage(err) });
   }
 }
