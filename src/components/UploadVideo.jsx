@@ -8,8 +8,23 @@ import { getBeatAlignedStart } from '../beatMatch'
 export default function UploadVideo({ session }) {
   function friendlyError(message) {
     if (!message) return 'Something went wrong. Please try again.'
-    if (message.includes('Failed to fetch')) return 'Network error — check your connection and try again.'
-    return message
+    const lower = message.toLowerCase()
+    if (lower.includes('failed to fetch') || lower.includes('network') || lower.includes('load failed')) {
+      return 'Network error — check your connection and try again.'
+    }
+    if (lower.includes('timeout') || lower.includes('timed out') || lower.includes('abort')) {
+      return 'That took too long — please try again.'
+    }
+    if (lower.includes('rate limit') || lower.includes('429') || lower.includes('busy')) {
+      return 'This service is busy right now — please try again in a moment.'
+    }
+    if (lower.includes('session') || lower.includes('401') || lower.includes('unauthorized') || lower.includes('log in')) {
+      return 'Your session may have expired — please log out and back in.'
+    }
+    if (lower.includes('too large') || lower.includes('too long') || lower.includes('mb') || lower.includes('please use') || lower.includes('please try again')) {
+      return message
+    }
+    return 'Something went wrong. Please try again.'
   }
   const [view, setView] = useState('editor') // 'editor' | 'history'
   const [referenceFile, setReferenceFile] = useState(null)
@@ -41,7 +56,7 @@ export default function UploadVideo({ session }) {
       if (result.error) throw new Error(result.error)
       setScript(result.script)
     } catch (err) {
-      setError('Script refinement failed: ' + err.message)
+      setError('Script refinement failed: ' + friendlyError(err.message))
     }
     setRefiningScript(false)
   }
@@ -116,7 +131,7 @@ export default function UploadVideo({ session }) {
 
       setSavedProject({ id: data.id, videoPath })
     } catch (err) {
-      setHistoryError('Could not save to history: ' + err.message)
+      setHistoryError('Could not save to history: ' + friendlyError(err.message))
     }
     setSavingToHistory(false)
   }
@@ -129,7 +144,7 @@ export default function UploadVideo({ session }) {
       await supabase.from('projects').delete().eq('id', savedProject.id)
       setSavedProject(null)
     } catch (err) {
-      setHistoryError('Could not undo: ' + err.message)
+      setHistoryError('Could not undo: ' + friendlyError(err.message))
     }
     setSavingToHistory(false)
   }
@@ -687,7 +702,7 @@ export default function UploadVideo({ session }) {
     setProgress("Completed!");
   } catch (err) {
     console.error(err);
-    setError(err.message || "Something went wrong. Please try again.");
+    setError(friendlyError(err.message));
   } finally {
     setUploading(false);
   }
