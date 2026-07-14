@@ -1,5 +1,7 @@
 import { requireUser } from './_lib/auth.js';
 import { checkRateLimit } from './_lib/rateLimit.js';
+import { withRetry } from './_lib/retry.js';
+import { safeErrorMessage } from './_lib/errors.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -22,8 +24,15 @@ export default async function handler(req, res) {
     // instead of just the 3 most popular regardless of duration.
     const url = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=15&fuzzytags=${encodeURIComponent(mood)}&include=musicinfo&ccnc=false&ccnd=false&order=popularity_total`;
 
-    const response = await fetch(url);
-    const data = await response.json();
+    const data = await withRetry(async () => {
+      const response = await fetch(url);
+      if (!response.ok) {
+        const err = new Error(`Jamendo request failed (${response.status})`);
+        err.status = response.status;
+        throw err;
+      }
+      return response.json();
+    });
 
     let tracks = (data.results || []).map((t) => ({
       name: t.name,
@@ -39,6 +48,6 @@ export default async function handler(req, res) {
     res.status(200).json({ tracks: tracks.slice(0, 3) });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: safeErrorMessage(err) });
   }
 }
