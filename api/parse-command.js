@@ -1,6 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { requireUser } from './_lib/auth.js';
 import { checkRateLimit } from './_lib/rateLimit.js';
+import { withRetry } from './_lib/retry.js';
+import { safeErrorMessage } from './_lib/errors.js';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -27,7 +29,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Command is too long (max 300 characters)' });
     }
 
-    const message = await anthropic.messages.create({
+    const message = await withRetry(() => anthropic.messages.create({
       model: 'claude-sonnet-5',
       max_tokens: 300,
       messages: [
@@ -47,7 +49,7 @@ Determine:
 Respond ONLY as JSON: {"action": "...", "timestampSeconds": 0, "durationSeconds": 3, "position": "...", "effectType": null}`,
         },
       ],
-    });
+    }));
 
     const text = message.content.find((b) => b.type === 'text')?.text ?? '{}';
     const clean = text.replace(/```json|```/g, '').trim();
@@ -56,6 +58,6 @@ Respond ONLY as JSON: {"action": "...", "timestampSeconds": 0, "durationSeconds"
     res.status(200).json(result);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: safeErrorMessage(err) });
   }
 }
