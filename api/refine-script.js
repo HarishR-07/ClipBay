@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { requireUser } from './_lib/auth.js';
-import { safeErrorMessage } from './_lib/errors.js';
+import { checkRateLimit } from './_lib/rateLimit.js';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -11,6 +11,11 @@ export default async function handler(req, res) {
 
   const user = await requireUser(req, res);
   if (!user) return; // requireUser already sent the 401 response
+
+  const { allowed } = await checkRateLimit(user.id, 'refine-script', 20);
+  if (!allowed) {
+    return res.status(429).json({ error: 'Daily limit reached for this feature — please try again tomorrow.' });
+  }
 
   try {
     const { script, instruction, mood } = req.body;
@@ -40,6 +45,6 @@ export default async function handler(req, res) {
     res.status(200).json(result);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: safeErrorMessage(err) });
+    res.status(500).json({ error: err.message });
   }
 }
