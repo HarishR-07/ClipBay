@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import MetadataGenerator from './MetadataGenerator'
 import { supabase } from '../supabaseClient'
 import { Upload, Film, LogOut, CheckCircle2, Sparkles, Music, Wand2, Image as ImageIcon, Download, RotateCcw, Clock, Trash2 } from 'lucide-react'
 import History from './History'
@@ -1079,6 +1080,8 @@ const [loadingHooks, setLoadingHooks] = useState(false);
                     {editingScript ? 'Done editing' : 'Write my own'}
                   </button>
                 </div>
+
+                <MetadataGenerator session={session} script={script} mood={mood} />   ← new line
 
                 <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #2E2A3F' }}>
                   <div style={{ fontSize: '12px', color: '#9691A8', marginBottom: '10px' }}>Generate voiceover:</div>
