@@ -1,5 +1,5 @@
  import { requireUser } from './_lib/auth.js';
-import { safeErrorMessage } from './_lib/errors.js';
+import { checkRateLimit } from './_lib/rateLimit.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -8,6 +8,11 @@ export default async function handler(req, res) {
 
   const user = await requireUser(req, res);
   if (!user) return; // requireUser already sent the 401 response
+
+  const { allowed } = await checkRateLimit(user.id, 'generate-voice', 15);
+  if (!allowed) {
+    return res.status(429).json({ error: 'Daily limit reached for this feature — please try again tomorrow.' });
+  }
 
   const { script, provider, voice } = req.body;
 
@@ -96,7 +101,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ audio: base64, mimeType, captions });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: safeErrorMessage(err) });
+    res.status(500).json({ error: err.message });
   }
 }
 
